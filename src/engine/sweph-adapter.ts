@@ -1,6 +1,6 @@
 import { calc_ut, houses_ex2, set_ephe_path, constants } from 'sweph';
 import { readdirSync } from 'node:fs';
-import type { PlanetId, PlanetPosition, HouseCusp, ChartAngles, HouseSystem } from './types.js';
+import type { PlanetId, PlanetPosition, HouseCusp, ChartAngles, HouseSystem, SignName } from './types.js';
 
 const PLANET_MAP: Record<PlanetId, number> = {
   SUN: constants.SE_SUN,
@@ -21,6 +21,11 @@ const PLANET_IDS: PlanetId[] = [
   'SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS',
   'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO',
   'TRUE_NODE', 'CHIRON',
+];
+
+const SIGN_NAMES: readonly SignName[] = [
+  'ARI', 'TAU', 'GEM', 'CAN', 'LEO', 'VIR',
+  'LIB', 'SCO', 'SAG', 'CAP', 'AQU', 'PIS',
 ];
 
 const CALC_FLAGS = constants.SEFLG_SWIEPH | constants.SEFLG_SPEED;
@@ -70,13 +75,15 @@ export function calcPlanets(jd: number): PlanetPosition[] {
     const lon = result.data[0];
     const lat = result.data[1];
     const speed = result.data[3];
+    const sign = Math.floor(lon / 30);
     return [{
       id,
       longitude: lon,
       latitude: lat,
       speed,
       isRetrograde: speed < 0,
-      sign: Math.floor(lon / 30),
+      sign,
+      signName: SIGN_NAMES[sign],
       degree: lon % 30,
     }];
   });

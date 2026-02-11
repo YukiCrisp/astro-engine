@@ -7,6 +7,7 @@ const PlanetPositionSchema = z.object({
   speed: z.number(),
   isRetrograde: z.boolean(),
   sign: z.number().int().min(0).max(11),
+  signName: z.enum(['ARI', 'TAU', 'GEM', 'CAN', 'LEO', 'VIR', 'LIB', 'SCO', 'SAG', 'CAP', 'AQU', 'PIS']),
   degree: z.number(),
 });
 

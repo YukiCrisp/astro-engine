@@ -5,6 +5,10 @@ export type PlanetId =
   | 'JUPITER' | 'SATURN' | 'URANUS' | 'NEPTUNE' | 'PLUTO'
   | 'TRUE_NODE' | 'CHIRON';
 
+export type SignName =
+  | 'ARI' | 'TAU' | 'GEM' | 'CAN' | 'LEO' | 'VIR'
+  | 'LIB' | 'SCO' | 'SAG' | 'CAP' | 'AQU' | 'PIS';
+
 export type HouseSystem = 'PLACIDUS' | 'WHOLE_SIGN';
 
 export type AspectType =
@@ -18,6 +22,7 @@ export interface PlanetPosition {
   speed: number;
   isRetrograde: boolean;
   sign: number;
+  signName: SignName;
   degree: number;
 }
 
