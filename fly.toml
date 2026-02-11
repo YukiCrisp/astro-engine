@@ -1,0 +1,17 @@
+app = "astro-engine"
+primary_region = "nrt"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 3001
+  auto_stop_machines = true
+  auto_start_machines = true
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 50
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

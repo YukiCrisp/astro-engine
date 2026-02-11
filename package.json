@@ -1,0 +1,37 @@
+{
+  "name": "astro-engine",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:unit": "vitest run test/unit",
+    "test:accuracy": "vitest run test/accuracy",
+    "test:watch": "vitest",
+    "docs:export": "tsx scripts/export-openapi.ts > docs/openapi.json"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11",
+    "@fastify/swagger": "^9",
+    "@fastify/swagger-ui": "^5",
+    "fastify": "^5",
+    "fastify-type-provider-zod": "^6",
+    "sweph": "latest",
+    "zod": "4.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4",
+    "typescript": "^5",
+    "vitest": "^2"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "trustedDependencies": [
+    "sweph"
+  ]
+}

@@ -1,0 +1,1980 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "astro-engine",
+    "description": "Swiss Ephemeris HTTP microservice for natal, progressed, and transit chart calculations.",
+    "version": "0.1.0",
+    "license": {
+      "name": "AGPL-3.0-only",
+      "url": "https://www.gnu.org/licenses/agpl-3.0.html"
+    }
+  },
+  "components": {
+    "schemas": {}
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/v1/charts/natal": {
+      "post": {
+        "summary": "Calculate natal chart",
+        "tags": [
+          "charts"
+        ],
+        "description": "Returns planetary positions, house cusps, angles, and aspects for a birth date/time/location.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "birthDate": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "birthTime": {
+                    "nullable": true,
+                    "type": "string",
+                    "pattern": "^\\d{2}:\\d{2}$"
+                  },
+                  "lat": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "lon": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "utcOffsetMinutes": {
+                    "type": "integer",
+                    "minimum": -840,
+                    "maximum": 840
+                  },
+                  "houseSystem": {
+                    "default": "PLACIDUS",
+                    "type": "string",
+                    "enum": [
+                      "PLACIDUS",
+                      "WHOLE_SIGN"
+                    ]
+                  }
+                },
+                "required": [
+                  "birthDate",
+                  "birthTime",
+                  "lat",
+                  "lon",
+                  "utcOffsetMinutes"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "planets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "enum": [
+                              "SUN",
+                              "MOON",
+                              "MERCURY",
+                              "VENUS",
+                              "MARS",
+                              "JUPITER",
+                              "SATURN",
+                              "URANUS",
+                              "NEPTUNE",
+                              "PLUTO",
+                              "TRUE_NODE",
+                              "CHIRON"
+                            ]
+                          },
+                          "longitude": {
+                            "type": "number"
+                          },
+                          "latitude": {
+                            "type": "number"
+                          },
+                          "speed": {
+                            "type": "number"
+                          },
+                          "isRetrograde": {
+                            "type": "boolean"
+                          },
+                          "sign": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "degree": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "longitude",
+                          "latitude",
+                          "speed",
+                          "isRetrograde",
+                          "sign",
+                          "degree"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "houses": {
+                      "nullable": true,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "house": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 12
+                          },
+                          "longitude": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "house",
+                          "longitude"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "angles": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "asc": {
+                          "type": "number"
+                        },
+                        "mc": {
+                          "type": "number"
+                        },
+                        "dsc": {
+                          "type": "number"
+                        },
+                        "ic": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "asc",
+                        "mc",
+                        "dsc",
+                        "ic"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "aspects": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "planetA": {
+                            "type": "string",
+                            "enum": [
+                              "SUN",
+                              "MOON",
+                              "MERCURY",
+                              "VENUS",
+                              "MARS",
+                              "JUPITER",
+                              "SATURN",
+                              "URANUS",
+                              "NEPTUNE",
+                              "PLUTO",
+                              "TRUE_NODE",
+                              "CHIRON"
+                            ]
+                          },
+                          "planetB": {
+                            "type": "string",
+                            "enum": [
+                              "SUN",
+                              "MOON",
+                              "MERCURY",
+                              "VENUS",
+                              "MARS",
+                              "JUPITER",
+                              "SATURN",
+                              "URANUS",
+                              "NEPTUNE",
+                              "PLUTO",
+                              "TRUE_NODE",
+                              "CHIRON"
+                            ]
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "CONJUNCTION",
+                              "OPPOSITION",
+                              "TRINE",
+                              "SQUARE",
+                              "SEXTILE",
+                              "QUINCUNX",
+                              "SEMISEXTILE",
+                              "SEMISQUARE",
+                              "SESQUIQUADRATE",
+                              "QUINTILE"
+                            ]
+                          },
+                          "angle": {
+                            "type": "number"
+                          },
+                          "orb": {
+                            "type": "number"
+                          },
+                          "applying": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "planetA",
+                          "planetB",
+                          "type",
+                          "angle",
+                          "orb",
+                          "applying"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "schemaVersion": {
+                          "type": "number"
+                        },
+                        "calculatedAt": {
+                          "type": "string"
+                        },
+                        "houseSystem": {
+                          "type": "string",
+                          "enum": [
+                            "PLACIDUS",
+                            "WHOLE_SIGN"
+                          ]
+                        },
+                        "julianDay": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "schemaVersion",
+                        "calculatedAt",
+                        "houseSystem",
+                        "julianDay"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "planets",
+                    "houses",
+                    "angles",
+                    "aspects",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/charts/progressed": {
+      "post": {
+        "summary": "Calculate secondary progressed chart",
+        "tags": [
+          "charts"
+        ],
+        "description": "Returns progressed planetary positions using secondary progression (1 day = 1 year).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "birthDate": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "birthTime": {
+                    "nullable": true,
+                    "type": "string",
+                    "pattern": "^\\d{2}:\\d{2}$"
+                  },
+                  "lat": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "lon": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "utcOffsetMinutes": {
+                    "type": "integer",
+                    "minimum": -840,
+                    "maximum": 840
+                  },
+                  "houseSystem": {
+                    "default": "PLACIDUS",
+                    "type": "string",
+                    "enum": [
+                      "PLACIDUS",
+                      "WHOLE_SIGN"
+                    ]
+                  },
+                  "progressedDate": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "relocatedLat": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "relocatedLon": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  }
+                },
+                "required": [
+                  "birthDate",
+                  "birthTime",
+                  "lat",
+                  "lon",
+                  "utcOffsetMinutes",
+                  "progressedDate"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "planets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "enum": [
+                              "SUN",
+                              "MOON",
+                              "MERCURY",
+                              "VENUS",
+                              "MARS",
+                              "JUPITER",
+                              "SATURN",
+                              "URANUS",
+                              "NEPTUNE",
+                              "PLUTO",
+                              "TRUE_NODE",
+                              "CHIRON"
+                            ]
+                          },
+                          "longitude": {
+                            "type": "number"
+                          },
+                          "latitude": {
+                            "type": "number"
+                          },
+                          "speed": {
+                            "type": "number"
+                          },
+                          "isRetrograde": {
+                            "type": "boolean"
+                          },
+                          "sign": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "degree": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "longitude",
+                          "latitude",
+                          "speed",
+                          "isRetrograde",
+                          "sign",
+                          "degree"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "houses": {
+                      "nullable": true,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "house": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 12
+                          },
+                          "longitude": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "house",
+                          "longitude"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "angles": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "asc": {
+                          "type": "number"
+                        },
+                        "mc": {
+                          "type": "number"
+                        },
+                        "dsc": {
+                          "type": "number"
+                        },
+                        "ic": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "asc",
+                        "mc",
+                        "dsc",
+                        "ic"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "aspects": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "planetA": {
+                            "type": "string",
+                            "enum": [
+                              "SUN",
+                              "MOON",
+                              "MERCURY",
+                              "VENUS",
+                              "MARS",
+                              "JUPITER",
+                              "SATURN",
+                              "URANUS",
+                              "NEPTUNE",
+                              "PLUTO",
+                              "TRUE_NODE",
+                              "CHIRON"
+                            ]
+                          },
+                          "planetB": {
+                            "type": "string",
+                            "enum": [
+                              "SUN",
+                              "MOON",
+                              "MERCURY",
+                              "VENUS",
+                              "MARS",
+                              "JUPITER",
+                              "SATURN",
+                              "URANUS",
+                              "NEPTUNE",
+                              "PLUTO",
+                              "TRUE_NODE",
+                              "CHIRON"
+                            ]
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "CONJUNCTION",
+                              "OPPOSITION",
+                              "TRINE",
+                              "SQUARE",
+                              "SEXTILE",
+                              "QUINCUNX",
+                              "SEMISEXTILE",
+                              "SEMISQUARE",
+                              "SESQUIQUADRATE",
+                              "QUINTILE"
+                            ]
+                          },
+                          "angle": {
+                            "type": "number"
+                          },
+                          "orb": {
+                            "type": "number"
+                          },
+                          "applying": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "planetA",
+                          "planetB",
+                          "type",
+                          "angle",
+                          "orb",
+                          "applying"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "schemaVersion": {
+                          "type": "number"
+                        },
+                        "calculatedAt": {
+                          "type": "string"
+                        },
+                        "houseSystem": {
+                          "type": "string",
+                          "enum": [
+                            "PLACIDUS",
+                            "WHOLE_SIGN"
+                          ]
+                        },
+                        "julianDay": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "schemaVersion",
+                        "calculatedAt",
+                        "houseSystem",
+                        "julianDay"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "planets",
+                    "houses",
+                    "angles",
+                    "aspects",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/charts/transit": {
+      "post": {
+        "summary": "Calculate transit chart",
+        "tags": [
+          "charts"
+        ],
+        "description": "Returns planetary positions and house cusps for a given date/time/location.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "transitDate": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "transitTime": {
+                    "nullable": true,
+                    "type": "string",
+                    "pattern": "^\\d{2}:\\d{2}$"
+                  },
+                  "lat": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "lon": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "utcOffsetMinutes": {
+                    "type": "integer",
+                    "minimum": -840,
+                    "maximum": 840
+                  },
+                  "houseSystem": {
+                    "default": "PLACIDUS",
+                    "type": "string",
+                    "enum": [
+                      "PLACIDUS",
+                      "WHOLE_SIGN"
+                    ]
+                  }
+                },
+                "required": [
+                  "transitDate",
+                  "transitTime",
+                  "lat",
+                  "lon",
+                  "utcOffsetMinutes"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "planets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "enum": [
+                              "SUN",
+                              "MOON",
+                              "MERCURY",
+                              "VENUS",
+                              "MARS",
+                              "JUPITER",
+                              "SATURN",
+                              "URANUS",
+                              "NEPTUNE",
+                              "PLUTO",
+                              "TRUE_NODE",
+                              "CHIRON"
+                            ]
+                          },
+                          "longitude": {
+                            "type": "number"
+                          },
+                          "latitude": {
+                            "type": "number"
+                          },
+                          "speed": {
+                            "type": "number"
+                          },
+                          "isRetrograde": {
+                            "type": "boolean"
+                          },
+                          "sign": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "degree": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "longitude",
+                          "latitude",
+                          "speed",
+                          "isRetrograde",
+                          "sign",
+                          "degree"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "houses": {
+                      "nullable": true,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "house": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 12
+                          },
+                          "longitude": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "house",
+                          "longitude"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "angles": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "asc": {
+                          "type": "number"
+                        },
+                        "mc": {
+                          "type": "number"
+                        },
+                        "dsc": {
+                          "type": "number"
+                        },
+                        "ic": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "asc",
+                        "mc",
+                        "dsc",
+                        "ic"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "aspects": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "planetA": {
+                            "type": "string",
+                            "enum": [
+                              "SUN",
+                              "MOON",
+                              "MERCURY",
+                              "VENUS",
+                              "MARS",
+                              "JUPITER",
+                              "SATURN",
+                              "URANUS",
+                              "NEPTUNE",
+                              "PLUTO",
+                              "TRUE_NODE",
+                              "CHIRON"
+                            ]
+                          },
+                          "planetB": {
+                            "type": "string",
+                            "enum": [
+                              "SUN",
+                              "MOON",
+                              "MERCURY",
+                              "VENUS",
+                              "MARS",
+                              "JUPITER",
+                              "SATURN",
+                              "URANUS",
+                              "NEPTUNE",
+                              "PLUTO",
+                              "TRUE_NODE",
+                              "CHIRON"
+                            ]
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "CONJUNCTION",
+                              "OPPOSITION",
+                              "TRINE",
+                              "SQUARE",
+                              "SEXTILE",
+                              "QUINCUNX",
+                              "SEMISEXTILE",
+                              "SEMISQUARE",
+                              "SESQUIQUADRATE",
+                              "QUINTILE"
+                            ]
+                          },
+                          "angle": {
+                            "type": "number"
+                          },
+                          "orb": {
+                            "type": "number"
+                          },
+                          "applying": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "planetA",
+                          "planetB",
+                          "type",
+                          "angle",
+                          "orb",
+                          "applying"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "schemaVersion": {
+                          "type": "number"
+                        },
+                        "calculatedAt": {
+                          "type": "string"
+                        },
+                        "houseSystem": {
+                          "type": "string",
+                          "enum": [
+                            "PLACIDUS",
+                            "WHOLE_SIGN"
+                          ]
+                        },
+                        "julianDay": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "schemaVersion",
+                        "calculatedAt",
+                        "houseSystem",
+                        "julianDay"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "planets",
+                    "houses",
+                    "angles",
+                    "aspects",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/charts/triple": {
+      "post": {
+        "summary": "Calculate triple chart (natal + progressed + transit)",
+        "tags": [
+          "charts"
+        ],
+        "description": "Returns natal, secondary progressed, and transit charts in a single call, with optional cross-chart aspects.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "natal": {
+                    "type": "object",
+                    "properties": {
+                      "birthDate": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "birthTime": {
+                        "nullable": true,
+                        "type": "string",
+                        "pattern": "^\\d{2}:\\d{2}$"
+                      },
+                      "lat": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "lon": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      "utcOffsetMinutes": {
+                        "type": "integer",
+                        "minimum": -840,
+                        "maximum": 840
+                      },
+                      "houseSystem": {
+                        "default": "PLACIDUS",
+                        "type": "string",
+                        "enum": [
+                          "PLACIDUS",
+                          "WHOLE_SIGN"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "birthDate",
+                      "birthTime",
+                      "lat",
+                      "lon",
+                      "utcOffsetMinutes"
+                    ]
+                  },
+                  "progressed": {
+                    "type": "object",
+                    "properties": {
+                      "progressedDate": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "relocatedLat": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "relocatedLon": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      }
+                    },
+                    "required": [
+                      "progressedDate"
+                    ]
+                  },
+                  "transit": {
+                    "type": "object",
+                    "properties": {
+                      "transitDate": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "transitTime": {
+                        "nullable": true,
+                        "type": "string",
+                        "pattern": "^\\d{2}:\\d{2}$"
+                      },
+                      "lat": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "lon": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      "utcOffsetMinutes": {
+                        "type": "integer",
+                        "minimum": -840,
+                        "maximum": 840
+                      },
+                      "houseSystem": {
+                        "default": "PLACIDUS",
+                        "type": "string",
+                        "enum": [
+                          "PLACIDUS",
+                          "WHOLE_SIGN"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "transitDate",
+                      "transitTime",
+                      "lat",
+                      "lon",
+                      "utcOffsetMinutes"
+                    ]
+                  },
+                  "computeCrossAspects": {
+                    "default": true,
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "natal",
+                  "progressed",
+                  "transit"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "natal": {
+                      "type": "object",
+                      "properties": {
+                        "planets": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "enum": [
+                                  "SUN",
+                                  "MOON",
+                                  "MERCURY",
+                                  "VENUS",
+                                  "MARS",
+                                  "JUPITER",
+                                  "SATURN",
+                                  "URANUS",
+                                  "NEPTUNE",
+                                  "PLUTO",
+                                  "TRUE_NODE",
+                                  "CHIRON"
+                                ]
+                              },
+                              "longitude": {
+                                "type": "number"
+                              },
+                              "latitude": {
+                                "type": "number"
+                              },
+                              "speed": {
+                                "type": "number"
+                              },
+                              "isRetrograde": {
+                                "type": "boolean"
+                              },
+                              "sign": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 11
+                              },
+                              "degree": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "longitude",
+                              "latitude",
+                              "speed",
+                              "isRetrograde",
+                              "sign",
+                              "degree"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "houses": {
+                          "nullable": true,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "house": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 12
+                              },
+                              "longitude": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "house",
+                              "longitude"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "angles": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "asc": {
+                              "type": "number"
+                            },
+                            "mc": {
+                              "type": "number"
+                            },
+                            "dsc": {
+                              "type": "number"
+                            },
+                            "ic": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "asc",
+                            "mc",
+                            "dsc",
+                            "ic"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "aspects": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "planetA": {
+                                "type": "string",
+                                "enum": [
+                                  "SUN",
+                                  "MOON",
+                                  "MERCURY",
+                                  "VENUS",
+                                  "MARS",
+                                  "JUPITER",
+                                  "SATURN",
+                                  "URANUS",
+                                  "NEPTUNE",
+                                  "PLUTO",
+                                  "TRUE_NODE",
+                                  "CHIRON"
+                                ]
+                              },
+                              "planetB": {
+                                "type": "string",
+                                "enum": [
+                                  "SUN",
+                                  "MOON",
+                                  "MERCURY",
+                                  "VENUS",
+                                  "MARS",
+                                  "JUPITER",
+                                  "SATURN",
+                                  "URANUS",
+                                  "NEPTUNE",
+                                  "PLUTO",
+                                  "TRUE_NODE",
+                                  "CHIRON"
+                                ]
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "CONJUNCTION",
+                                  "OPPOSITION",
+                                  "TRINE",
+                                  "SQUARE",
+                                  "SEXTILE",
+                                  "QUINCUNX",
+                                  "SEMISEXTILE",
+                                  "SEMISQUARE",
+                                  "SESQUIQUADRATE",
+                                  "QUINTILE"
+                                ]
+                              },
+                              "angle": {
+                                "type": "number"
+                              },
+                              "orb": {
+                                "type": "number"
+                              },
+                              "applying": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "planetA",
+                              "planetB",
+                              "type",
+                              "angle",
+                              "orb",
+                              "applying"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "meta": {
+                          "type": "object",
+                          "properties": {
+                            "schemaVersion": {
+                              "type": "number"
+                            },
+                            "calculatedAt": {
+                              "type": "string"
+                            },
+                            "houseSystem": {
+                              "type": "string",
+                              "enum": [
+                                "PLACIDUS",
+                                "WHOLE_SIGN"
+                              ]
+                            },
+                            "julianDay": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "schemaVersion",
+                            "calculatedAt",
+                            "houseSystem",
+                            "julianDay"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "planets",
+                        "houses",
+                        "angles",
+                        "aspects",
+                        "meta"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "progressed": {
+                      "type": "object",
+                      "properties": {
+                        "planets": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "enum": [
+                                  "SUN",
+                                  "MOON",
+                                  "MERCURY",
+                                  "VENUS",
+                                  "MARS",
+                                  "JUPITER",
+                                  "SATURN",
+                                  "URANUS",
+                                  "NEPTUNE",
+                                  "PLUTO",
+                                  "TRUE_NODE",
+                                  "CHIRON"
+                                ]
+                              },
+                              "longitude": {
+                                "type": "number"
+                              },
+                              "latitude": {
+                                "type": "number"
+                              },
+                              "speed": {
+                                "type": "number"
+                              },
+                              "isRetrograde": {
+                                "type": "boolean"
+                              },
+                              "sign": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 11
+                              },
+                              "degree": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "longitude",
+                              "latitude",
+                              "speed",
+                              "isRetrograde",
+                              "sign",
+                              "degree"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "houses": {
+                          "nullable": true,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "house": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 12
+                              },
+                              "longitude": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "house",
+                              "longitude"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "angles": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "asc": {
+                              "type": "number"
+                            },
+                            "mc": {
+                              "type": "number"
+                            },
+                            "dsc": {
+                              "type": "number"
+                            },
+                            "ic": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "asc",
+                            "mc",
+                            "dsc",
+                            "ic"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "aspects": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "planetA": {
+                                "type": "string",
+                                "enum": [
+                                  "SUN",
+                                  "MOON",
+                                  "MERCURY",
+                                  "VENUS",
+                                  "MARS",
+                                  "JUPITER",
+                                  "SATURN",
+                                  "URANUS",
+                                  "NEPTUNE",
+                                  "PLUTO",
+                                  "TRUE_NODE",
+                                  "CHIRON"
+                                ]
+                              },
+                              "planetB": {
+                                "type": "string",
+                                "enum": [
+                                  "SUN",
+                                  "MOON",
+                                  "MERCURY",
+                                  "VENUS",
+                                  "MARS",
+                                  "JUPITER",
+                                  "SATURN",
+                                  "URANUS",
+                                  "NEPTUNE",
+                                  "PLUTO",
+                                  "TRUE_NODE",
+                                  "CHIRON"
+                                ]
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "CONJUNCTION",
+                                  "OPPOSITION",
+                                  "TRINE",
+                                  "SQUARE",
+                                  "SEXTILE",
+                                  "QUINCUNX",
+                                  "SEMISEXTILE",
+                                  "SEMISQUARE",
+                                  "SESQUIQUADRATE",
+                                  "QUINTILE"
+                                ]
+                              },
+                              "angle": {
+                                "type": "number"
+                              },
+                              "orb": {
+                                "type": "number"
+                              },
+                              "applying": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "planetA",
+                              "planetB",
+                              "type",
+                              "angle",
+                              "orb",
+                              "applying"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "meta": {
+                          "type": "object",
+                          "properties": {
+                            "schemaVersion": {
+                              "type": "number"
+                            },
+                            "calculatedAt": {
+                              "type": "string"
+                            },
+                            "houseSystem": {
+                              "type": "string",
+                              "enum": [
+                                "PLACIDUS",
+                                "WHOLE_SIGN"
+                              ]
+                            },
+                            "julianDay": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "schemaVersion",
+                            "calculatedAt",
+                            "houseSystem",
+                            "julianDay"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "planets",
+                        "houses",
+                        "angles",
+                        "aspects",
+                        "meta"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "transit": {
+                      "type": "object",
+                      "properties": {
+                        "planets": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "enum": [
+                                  "SUN",
+                                  "MOON",
+                                  "MERCURY",
+                                  "VENUS",
+                                  "MARS",
+                                  "JUPITER",
+                                  "SATURN",
+                                  "URANUS",
+                                  "NEPTUNE",
+                                  "PLUTO",
+                                  "TRUE_NODE",
+                                  "CHIRON"
+                                ]
+                              },
+                              "longitude": {
+                                "type": "number"
+                              },
+                              "latitude": {
+                                "type": "number"
+                              },
+                              "speed": {
+                                "type": "number"
+                              },
+                              "isRetrograde": {
+                                "type": "boolean"
+                              },
+                              "sign": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 11
+                              },
+                              "degree": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "longitude",
+                              "latitude",
+                              "speed",
+                              "isRetrograde",
+                              "sign",
+                              "degree"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "houses": {
+                          "nullable": true,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "house": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 12
+                              },
+                              "longitude": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "house",
+                              "longitude"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "angles": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "asc": {
+                              "type": "number"
+                            },
+                            "mc": {
+                              "type": "number"
+                            },
+                            "dsc": {
+                              "type": "number"
+                            },
+                            "ic": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "asc",
+                            "mc",
+                            "dsc",
+                            "ic"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "aspects": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "planetA": {
+                                "type": "string",
+                                "enum": [
+                                  "SUN",
+                                  "MOON",
+                                  "MERCURY",
+                                  "VENUS",
+                                  "MARS",
+                                  "JUPITER",
+                                  "SATURN",
+                                  "URANUS",
+                                  "NEPTUNE",
+                                  "PLUTO",
+                                  "TRUE_NODE",
+                                  "CHIRON"
+                                ]
+                              },
+                              "planetB": {
+                                "type": "string",
+                                "enum": [
+                                  "SUN",
+                                  "MOON",
+                                  "MERCURY",
+                                  "VENUS",
+                                  "MARS",
+                                  "JUPITER",
+                                  "SATURN",
+                                  "URANUS",
+                                  "NEPTUNE",
+                                  "PLUTO",
+                                  "TRUE_NODE",
+                                  "CHIRON"
+                                ]
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "CONJUNCTION",
+                                  "OPPOSITION",
+                                  "TRINE",
+                                  "SQUARE",
+                                  "SEXTILE",
+                                  "QUINCUNX",
+                                  "SEMISEXTILE",
+                                  "SEMISQUARE",
+                                  "SESQUIQUADRATE",
+                                  "QUINTILE"
+                                ]
+                              },
+                              "angle": {
+                                "type": "number"
+                              },
+                              "orb": {
+                                "type": "number"
+                              },
+                              "applying": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "planetA",
+                              "planetB",
+                              "type",
+                              "angle",
+                              "orb",
+                              "applying"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "meta": {
+                          "type": "object",
+                          "properties": {
+                            "schemaVersion": {
+                              "type": "number"
+                            },
+                            "calculatedAt": {
+                              "type": "string"
+                            },
+                            "houseSystem": {
+                              "type": "string",
+                              "enum": [
+                                "PLACIDUS",
+                                "WHOLE_SIGN"
+                              ]
+                            },
+                            "julianDay": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "schemaVersion",
+                            "calculatedAt",
+                            "houseSystem",
+                            "julianDay"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "planets",
+                        "houses",
+                        "angles",
+                        "aspects",
+                        "meta"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "crossAspects": {
+                      "type": "object",
+                      "properties": {
+                        "natalToProgressed": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "planetA": {
+                                "type": "string",
+                                "enum": [
+                                  "SUN",
+                                  "MOON",
+                                  "MERCURY",
+                                  "VENUS",
+                                  "MARS",
+                                  "JUPITER",
+                                  "SATURN",
+                                  "URANUS",
+                                  "NEPTUNE",
+                                  "PLUTO",
+                                  "TRUE_NODE",
+                                  "CHIRON"
+                                ]
+                              },
+                              "planetB": {
+                                "type": "string",
+                                "enum": [
+                                  "SUN",
+                                  "MOON",
+                                  "MERCURY",
+                                  "VENUS",
+                                  "MARS",
+                                  "JUPITER",
+                                  "SATURN",
+                                  "URANUS",
+                                  "NEPTUNE",
+                                  "PLUTO",
+                                  "TRUE_NODE",
+                                  "CHIRON"
+                                ]
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "CONJUNCTION",
+                                  "OPPOSITION",
+                                  "TRINE",
+                                  "SQUARE",
+                                  "SEXTILE",
+                                  "QUINCUNX",
+                                  "SEMISEXTILE",
+                                  "SEMISQUARE",
+                                  "SESQUIQUADRATE",
+                                  "QUINTILE"
+                                ]
+                              },
+                              "angle": {
+                                "type": "number"
+                              },
+                              "orb": {
+                                "type": "number"
+                              },
+                              "applying": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "planetA",
+                              "planetB",
+                              "type",
+                              "angle",
+                              "orb",
+                              "applying"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "natalToTransit": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "planetA": {
+                                "type": "string",
+                                "enum": [
+                                  "SUN",
+                                  "MOON",
+                                  "MERCURY",
+                                  "VENUS",
+                                  "MARS",
+                                  "JUPITER",
+                                  "SATURN",
+                                  "URANUS",
+                                  "NEPTUNE",
+                                  "PLUTO",
+                                  "TRUE_NODE",
+                                  "CHIRON"
+                                ]
+                              },
+                              "planetB": {
+                                "type": "string",
+                                "enum": [
+                                  "SUN",
+                                  "MOON",
+                                  "MERCURY",
+                                  "VENUS",
+                                  "MARS",
+                                  "JUPITER",
+                                  "SATURN",
+                                  "URANUS",
+                                  "NEPTUNE",
+                                  "PLUTO",
+                                  "TRUE_NODE",
+                                  "CHIRON"
+                                ]
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "CONJUNCTION",
+                                  "OPPOSITION",
+                                  "TRINE",
+                                  "SQUARE",
+                                  "SEXTILE",
+                                  "QUINCUNX",
+                                  "SEMISEXTILE",
+                                  "SEMISQUARE",
+                                  "SESQUIQUADRATE",
+                                  "QUINTILE"
+                                ]
+                              },
+                              "angle": {
+                                "type": "number"
+                              },
+                              "orb": {
+                                "type": "number"
+                              },
+                              "applying": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "planetA",
+                              "planetB",
+                              "type",
+                              "angle",
+                              "orb",
+                              "applying"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "progressedToTransit": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "planetA": {
+                                "type": "string",
+                                "enum": [
+                                  "SUN",
+                                  "MOON",
+                                  "MERCURY",
+                                  "VENUS",
+                                  "MARS",
+                                  "JUPITER",
+                                  "SATURN",
+                                  "URANUS",
+                                  "NEPTUNE",
+                                  "PLUTO",
+                                  "TRUE_NODE",
+                                  "CHIRON"
+                                ]
+                              },
+                              "planetB": {
+                                "type": "string",
+                                "enum": [
+                                  "SUN",
+                                  "MOON",
+                                  "MERCURY",
+                                  "VENUS",
+                                  "MARS",
+                                  "JUPITER",
+                                  "SATURN",
+                                  "URANUS",
+                                  "NEPTUNE",
+                                  "PLUTO",
+                                  "TRUE_NODE",
+                                  "CHIRON"
+                                ]
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "CONJUNCTION",
+                                  "OPPOSITION",
+                                  "TRINE",
+                                  "SQUARE",
+                                  "SEXTILE",
+                                  "QUINCUNX",
+                                  "SEMISEXTILE",
+                                  "SEMISQUARE",
+                                  "SESQUIQUADRATE",
+                                  "QUINTILE"
+                                ]
+                              },
+                              "angle": {
+                                "type": "number"
+                              },
+                              "orb": {
+                                "type": "number"
+                              },
+                              "applying": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "planetA",
+                              "planetB",
+                              "type",
+                              "angle",
+                              "orb",
+                              "applying"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "natalToProgressed",
+                        "natalToTransit",
+                        "progressedToTransit"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "schemaVersion": {
+                          "type": "number"
+                        },
+                        "calculatedAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "schemaVersion",
+                        "calculatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "natal",
+                    "progressed",
+                    "transit",
+                    "crossAspects",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "health",
+      "description": "Service health and readiness"
+    },
+    {
+      "name": "charts",
+      "description": "Astrological chart calculations"
+    }
+  ]
+}
