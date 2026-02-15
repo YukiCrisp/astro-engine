@@ -74,3 +74,40 @@ export interface TripleChartData {
     calculatedAt: string;
   };
 }
+
+export interface SynastryChartData {
+  personA: NatalChartData;
+  personB: NatalChartData;
+  crossAspects: Aspect[];
+  meta: {
+    schemaVersion: number;
+    calculatedAt: string;
+  };
+}
+
+export interface EphemerisDay {
+  date: string;
+  planets: PlanetPosition[];
+}
+
+export type EphemerisEventType = 'INGRESS' | 'STATION_RETROGRADE' | 'STATION_DIRECT' | 'EXACT_ASPECT';
+
+export interface EphemerisEvent {
+  date: string;
+  type: EphemerisEventType;
+  planet: PlanetId;
+  detail: string;
+  targetPlanet?: PlanetId;
+  aspectType?: AspectType;
+}
+
+export interface EphemerisData {
+  year: number;
+  month: number;
+  days: EphemerisDay[];
+  events: EphemerisEvent[];
+  meta: {
+    schemaVersion: number;
+    calculatedAt: string;
+  };
+}

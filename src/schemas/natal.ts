@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
 export const NatalRequestSchema = z.object({
-  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  birthTime: z.string().regex(/^\d{2}:\d{2}$/).nullable(),
-  lat: z.number().min(-90).max(90),
-  lon: z.number().min(-180).max(180),
-  utcOffsetMinutes: z.number().int().min(-840).max(840),
-  houseSystem: z.enum(['PLACIDUS', 'WHOLE_SIGN']).default('PLACIDUS'),
+  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('Birth date in YYYY-MM-DD format').meta({ example: '1879-03-14' }),
+  birthTime: z.string().regex(/^\d{2}:\d{2}$/).nullable().describe('Birth time in HH:MM format, or null if unknown').meta({ example: '11:30' }),
+  lat: z.number().min(-90).max(90).describe('Latitude of birth location').meta({ example: 48.4011 }),
+  lon: z.number().min(-180).max(180).describe('Longitude of birth location').meta({ example: 9.9876 }),
+  utcOffsetMinutes: z.number().int().min(-840).max(840).describe('UTC offset in minutes at time of birth').meta({ example: 60 }),
+  houseSystem: z.enum(['PLACIDUS', 'WHOLE_SIGN']).default('PLACIDUS').describe('House system'),
 });
 export type NatalRequest = z.infer<typeof NatalRequestSchema>;

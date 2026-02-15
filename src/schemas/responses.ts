@@ -59,3 +59,38 @@ export const TripleChartDataSchema = z.object({
     calculatedAt: z.string(),
   }),
 });
+
+export const SynastryChartDataSchema = z.object({
+  personA: NatalChartDataSchema,
+  personB: NatalChartDataSchema,
+  crossAspects: z.array(AspectSchema),
+  meta: z.object({
+    schemaVersion: z.number(),
+    calculatedAt: z.string(),
+  }),
+});
+
+const EphemerisDaySchema = z.object({
+  date: z.string(),
+  planets: z.array(PlanetPositionSchema),
+});
+
+const EphemerisEventSchema = z.object({
+  date: z.string(),
+  type: z.enum(['INGRESS', 'STATION_RETROGRADE', 'STATION_DIRECT', 'EXACT_ASPECT']),
+  planet: z.enum(['SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO', 'TRUE_NODE', 'CHIRON']),
+  detail: z.string(),
+  targetPlanet: z.enum(['SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO', 'TRUE_NODE', 'CHIRON']).optional(),
+  aspectType: z.enum(['CONJUNCTION', 'OPPOSITION', 'TRINE', 'SQUARE', 'SEXTILE', 'QUINCUNX', 'SEMISEXTILE', 'SEMISQUARE', 'SESQUIQUADRATE', 'QUINTILE']).optional(),
+});
+
+export const EphemerisDataSchema = z.object({
+  year: z.number(),
+  month: z.number(),
+  days: z.array(EphemerisDaySchema),
+  events: z.array(EphemerisEventSchema),
+  meta: z.object({
+    schemaVersion: z.number(),
+    calculatedAt: z.string(),
+  }),
+});

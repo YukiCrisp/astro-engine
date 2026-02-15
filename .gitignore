@@ -2,3 +2,5 @@ node_modules/
 dist/
 ephe/
 .env
+APP_PLAN.md
+CLAUDE.md

@@ -9,6 +9,9 @@ import { natalRoute } from './routes/natal.js';
 import { progressedRoute } from './routes/progressed.js';
 import { transitRoute } from './routes/transit.js';
 import { tripleRoute } from './routes/triple.js';
+import { synastryRoute } from './routes/synastry.js';
+import { compositeRoute } from './routes/composite.js';
+import { ephemerisRoute } from './routes/ephemeris.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
@@ -67,6 +70,9 @@ export async function buildApp() {
   await app.register(progressedRoute);
   await app.register(transitRoute);
   await app.register(tripleRoute);
+  await app.register(synastryRoute);
+  await app.register(compositeRoute);
+  await app.register(ephemerisRoute);
 
   return app;
 }
