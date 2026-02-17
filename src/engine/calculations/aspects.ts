@@ -12,31 +12,52 @@ const ASPECT_ANGLES: [AspectType, number][] = [
   ['SESQUIQUADRATE', 135], ['QUINTILE', 72],
 ];
 
-const LUMINARY_BONUS = 2;
-const LUMINARIES: Set<PlanetId> = new Set(['SUN', 'MOON']);
+const DEFAULT_LUMINARY_BONUS = 2;
 
 function angularDistance(lonA: number, lonB: number): number {
   const diff = Math.abs(lonA - lonB) % 360;
   return diff > 180 ? 360 - diff : diff;
 }
 
-function getOrb(type: AspectType, a: PlanetId, b: PlanetId): number {
-  const base = ORB_TABLE[type];
-  return (LUMINARIES.has(a) || LUMINARIES.has(b)) ? base + LUMINARY_BONUS : base;
+export interface AspectConfig {
+  enabledAspects?: AspectType[];
+  orbOverrides?: Partial<Record<AspectType, number>>;
+  sunOrbBonus?: number;
+  moonOrbBonus?: number;
+}
+
+function getOrb(
+  type: AspectType,
+  a: PlanetId,
+  b: PlanetId,
+  orbOverrides?: Partial<Record<AspectType, number>>,
+  sunBonus: number = DEFAULT_LUMINARY_BONUS,
+  moonBonus: number = DEFAULT_LUMINARY_BONUS,
+): number {
+  const base = orbOverrides?.[type] ?? ORB_TABLE[type];
+  const hasSun = a === 'SUN' || b === 'SUN';
+  const hasMoon = a === 'MOON' || b === 'MOON';
+  if (hasSun) return base + sunBonus;
+  if (hasMoon) return base + moonBonus;
+  return base;
 }
 
 export function detectAspects(
   planets: PlanetPosition[],
-  orbMultiplier: number = 1
+  orbMultiplier: number = 1,
+  config?: AspectConfig,
 ): Aspect[] {
+  const angles = config?.enabledAspects
+    ? ASPECT_ANGLES.filter(([type]) => config.enabledAspects!.includes(type))
+    : ASPECT_ANGLES;
   const aspects: Aspect[] = [];
   for (let i = 0; i < planets.length; i++) {
     for (let j = i + 1; j < planets.length; j++) {
       const a = planets[i];
       const b = planets[j];
       const dist = angularDistance(a.longitude, b.longitude);
-      for (const [type, angle] of ASPECT_ANGLES) {
-        const maxOrb = getOrb(type, a.id, b.id) * orbMultiplier;
+      for (const [type, angle] of angles) {
+        const maxOrb = getOrb(type, a.id, b.id, config?.orbOverrides, config?.sunOrbBonus, config?.moonOrbBonus) * orbMultiplier;
         const orb = Math.abs(dist - angle);
         if (orb <= maxOrb) {
           const applying = a.speed > b.speed;
@@ -51,15 +72,19 @@ export function detectAspects(
 
 export function detectCrossAspects(
   planetsA: PlanetPosition[],
-  planetsB: PlanetPosition[]
+  planetsB: PlanetPosition[],
+  config?: AspectConfig,
 ): Aspect[] {
+  const angles = config?.enabledAspects
+    ? ASPECT_ANGLES.filter(([type]) => config.enabledAspects!.includes(type))
+    : ASPECT_ANGLES;
   const aspects: Aspect[] = [];
   for (const a of planetsA) {
     for (const b of planetsB) {
       if (a.id === b.id) continue;
       const dist = angularDistance(a.longitude, b.longitude);
-      for (const [type, angle] of ASPECT_ANGLES) {
-        const maxOrb = getOrb(type, a.id, b.id) * 0.5;
+      for (const [type, angle] of angles) {
+        const maxOrb = getOrb(type, a.id, b.id, config?.orbOverrides, config?.sunOrbBonus, config?.moonOrbBonus) * 0.5;
         const orb = Math.abs(dist - angle);
         if (orb <= maxOrb) {
           aspects.push({ planetA: a.id, planetB: b.id, type, angle, orb, applying: false });

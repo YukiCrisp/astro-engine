@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { NatalRequestSchema } from './natal.js';
+import { NatalRequestSchema, EngineFilterSchema } from './natal.js';
 import { TransitRequestSchema } from './transit.js';
 
 export const TripleRequestSchema = z.object({
@@ -11,5 +11,5 @@ export const TripleRequestSchema = z.object({
   }),
   transit: TransitRequestSchema,
   computeCrossAspects: z.boolean().default(true).describe('Whether to compute cross-chart aspects'),
-});
+}).merge(EngineFilterSchema);
 export type TripleRequest = z.infer<typeof TripleRequestSchema>;

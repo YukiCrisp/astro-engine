@@ -3,7 +3,9 @@ export const SCHEMA_VERSION = 1;
 export type PlanetId =
   | 'SUN' | 'MOON' | 'MERCURY' | 'VENUS' | 'MARS'
   | 'JUPITER' | 'SATURN' | 'URANUS' | 'NEPTUNE' | 'PLUTO'
-  | 'TRUE_NODE' | 'CHIRON';
+  | 'TRUE_NODE' | 'CHIRON'
+  | 'MEAN_NODE' | 'MEAN_LILITH' | 'TRUE_LILITH'
+  | 'PHOLUS' | 'CERES' | 'PALLAS' | 'JUNO' | 'VESTA';
 
 export type SignName =
   | 'ARI' | 'TAU' | 'GEM' | 'CAN' | 'LEO' | 'VIR'
@@ -36,6 +38,9 @@ export interface ChartAngles {
   mc: number;
   dsc: number;
   ic: number;
+  vertex: number;
+  eastPoint: number;
+  partOfFortune: number;
 }
 
 export interface Aspect {
@@ -106,6 +111,24 @@ export interface EphemerisData {
   month: number;
   days: EphemerisDay[];
   events: EphemerisEvent[];
+  meta: {
+    schemaVersion: number;
+    calculatedAt: string;
+  };
+}
+
+export interface VocMoonPeriod {
+  start: string;
+  end: string;
+  lastAspectPlanet: PlanetId;
+  lastAspectType: AspectType;
+  endSign: SignName;
+}
+
+export interface VocMoonData {
+  year: number;
+  month: number;
+  periods: VocMoonPeriod[];
   meta: {
     schemaVersion: number;
     calculatedAt: string;

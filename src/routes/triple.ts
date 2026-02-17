@@ -16,12 +16,17 @@ export async function tripleRoute(app: FastifyInstance) {
       response: { 200: TripleChartDataSchema },
     },
     handler: async (req) => {
-      const { natal, progressed, transit, computeCrossAspects } = req.body;
+      const { natal, progressed, transit, computeCrossAspects, enabledPlanets, enabledAspects, aspectOrbs, sunOrbBonus, moonOrbBonus } = req.body;
       return calculateTriple({
         natal,
         progressedDate: progressed.progressedDate,
         transit,
         computeCrossAspects,
+        enabledPlanets,
+        enabledAspects,
+        aspectOrbs,
+        sunOrbBonus,
+        moonOrbBonus,
       });
     },
   });

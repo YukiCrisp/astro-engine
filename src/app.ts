@@ -12,6 +12,7 @@ import { tripleRoute } from './routes/triple.js';
 import { synastryRoute } from './routes/synastry.js';
 import { compositeRoute } from './routes/composite.js';
 import { ephemerisRoute } from './routes/ephemeris.js';
+import { vocMoonRoute } from './routes/voc-moon.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
@@ -73,6 +74,7 @@ export async function buildApp() {
   await app.register(synastryRoute);
   await app.register(compositeRoute);
   await app.register(ephemerisRoute);
+  await app.register(vocMoonRoute);
 
   return app;
 }

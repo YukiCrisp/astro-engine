@@ -1,23 +1,53 @@
 import { calcPlanets, calcHouses } from './sweph-adapter.js';
 import { detectAspects, detectCrossAspects } from './calculations/aspects.js';
+import type { AspectConfig } from './calculations/aspects.js';
 import { getProgressedJulianDay } from './calculations/progressions.js';
 import { midpointLongitude } from './calculations/composite.js';
+import { calculateVocPeriods } from './calculations/voc-moon.js';
 import { buildJulianDay, toJulianDay } from '../utils/date.js';
 import { SCHEMA_VERSION } from './types.js';
 import type {
   NatalChartData, HouseSystem, TripleChartData,
   SynastryChartData, EphemerisData, EphemerisEvent,
+  VocMoonData,
   PlanetId, PlanetPosition, AspectType, SignName,
 } from './types.js';
+
+function computePartOfFortune(angles: import('./types.js').ChartAngles, planets: import('./types.js').PlanetPosition[]): void {
+  const sun = planets.find(p => p.id === 'SUN');
+  const moon = planets.find(p => p.id === 'MOON');
+  if (sun && moon) {
+    angles.partOfFortune = (angles.asc + moon.longitude - sun.longitude + 360) % 360;
+  }
+}
+
+export interface EngineFilterParams {
+  enabledPlanets?: PlanetId[];
+  enabledAspects?: AspectType[];
+  aspectOrbs?: Partial<Record<AspectType, number>>;
+  sunOrbBonus?: number;
+  moonOrbBonus?: number;
+}
+
+function toAspectConfig(p?: EngineFilterParams): AspectConfig | undefined {
+  if (!p) return undefined;
+  if (!p.enabledAspects && !p.aspectOrbs && p.sunOrbBonus === undefined && p.moonOrbBonus === undefined) return undefined;
+  return {
+    enabledAspects: p.enabledAspects,
+    orbOverrides: p.aspectOrbs,
+    sunOrbBonus: p.sunOrbBonus,
+    moonOrbBonus: p.moonOrbBonus,
+  };
+}
 
 export function calculateNatal(params: {
   birthDate: string; birthTime: string | null;
   lat: number; lon: number;
   utcOffsetMinutes: number; houseSystem: HouseSystem;
-}): NatalChartData {
+} & EngineFilterParams): NatalChartData {
   const jd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
-  const planets = calcPlanets(jd);
-  const aspects = detectAspects(planets);
+  const planets = calcPlanets(jd, params.enabledPlanets);
+  const aspects = detectAspects(planets, 1, toAspectConfig(params));
 
   if (params.birthTime === null) {
     return {
@@ -27,6 +57,7 @@ export function calculateNatal(params: {
   }
 
   const { houses, angles } = calcHouses(jd, params.lat, params.lon, params.houseSystem);
+  computePartOfFortune(angles, planets);
   return {
     planets, houses, angles, aspects,
     meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, julianDay: jd },
@@ -39,10 +70,10 @@ export function calculateProgressed(params: {
   utcOffsetMinutes: number; houseSystem: HouseSystem;
   progressedDate: string;
   relocatedLat?: number; relocatedLon?: number;
-}): NatalChartData {
+} & EngineFilterParams): NatalChartData {
   const jd = getProgressedJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes, params.progressedDate);
-  const planets = calcPlanets(jd);
-  const aspects = detectAspects(planets);
+  const planets = calcPlanets(jd, params.enabledPlanets);
+  const aspects = detectAspects(planets, 1, toAspectConfig(params));
 
   if (params.birthTime === null) {
     return {
@@ -54,6 +85,7 @@ export function calculateProgressed(params: {
   const houseLat = params.relocatedLat ?? params.lat;
   const houseLon = params.relocatedLon ?? params.lon;
   const { houses, angles } = calcHouses(jd, houseLat, houseLon, params.houseSystem);
+  computePartOfFortune(angles, planets);
   return {
     planets, houses, angles, aspects,
     meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, julianDay: jd },
@@ -64,10 +96,10 @@ export function calculateTransit(params: {
   transitDate: string; transitTime: string | null;
   lat: number; lon: number;
   utcOffsetMinutes: number; houseSystem: HouseSystem;
-}): NatalChartData {
+} & EngineFilterParams): NatalChartData {
   const jd = buildJulianDay(params.transitDate, params.transitTime, params.utcOffsetMinutes);
-  const planets = calcPlanets(jd);
-  const aspects = detectAspects(planets);
+  const planets = calcPlanets(jd, params.enabledPlanets);
+  const aspects = detectAspects(planets, 1, toAspectConfig(params));
 
   if (params.transitTime === null) {
     return {
@@ -77,6 +109,7 @@ export function calculateTransit(params: {
   }
 
   const { houses, angles } = calcHouses(jd, params.lat, params.lon, params.houseSystem);
+  computePartOfFortune(angles, planets);
   return {
     planets, houses, angles, aspects,
     meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, julianDay: jd },
@@ -88,16 +121,24 @@ export function calculateTriple(params: {
   progressedDate: string;
   transit: Parameters<typeof calculateTransit>[0];
   computeCrossAspects: boolean;
-}): TripleChartData {
-  const natal = calculateNatal(params.natal);
-  const progressed = calculateProgressed({ ...params.natal, progressedDate: params.progressedDate });
-  const transit = calculateTransit(params.transit);
+} & EngineFilterParams): TripleChartData {
+  const filterParams: EngineFilterParams = {
+    enabledPlanets: params.enabledPlanets,
+    enabledAspects: params.enabledAspects,
+    aspectOrbs: params.aspectOrbs,
+    sunOrbBonus: params.sunOrbBonus,
+    moonOrbBonus: params.moonOrbBonus,
+  };
+  const natal = calculateNatal({ ...params.natal, ...filterParams });
+  const progressed = calculateProgressed({ ...params.natal, progressedDate: params.progressedDate, ...filterParams });
+  const transit = calculateTransit({ ...params.transit, ...filterParams });
+  const aspectConfig = toAspectConfig(filterParams);
   return {
     natal, progressed, transit,
     crossAspects: params.computeCrossAspects ? {
-      natalToProgressed: detectCrossAspects(natal.planets, progressed.planets),
-      natalToTransit: detectCrossAspects(natal.planets, transit.planets),
-      progressedToTransit: detectCrossAspects(progressed.planets, transit.planets),
+      natalToProgressed: detectCrossAspects(natal.planets, progressed.planets, aspectConfig),
+      natalToTransit: detectCrossAspects(natal.planets, transit.planets, aspectConfig),
+      progressedToTransit: detectCrossAspects(progressed.planets, transit.planets, aspectConfig),
     } : { natalToProgressed: [], natalToTransit: [], progressedToTransit: [] },
     meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString() },
   };
@@ -106,10 +147,17 @@ export function calculateTriple(params: {
 export function calculateSynastry(params: {
   personA: Parameters<typeof calculateNatal>[0];
   personB: Parameters<typeof calculateNatal>[0];
-}): SynastryChartData {
-  const personA = calculateNatal(params.personA);
-  const personB = calculateNatal(params.personB);
-  const crossAspects = detectCrossAspects(personA.planets, personB.planets);
+} & EngineFilterParams): SynastryChartData {
+  const filterParams: EngineFilterParams = {
+    enabledPlanets: params.enabledPlanets,
+    enabledAspects: params.enabledAspects,
+    aspectOrbs: params.aspectOrbs,
+    sunOrbBonus: params.sunOrbBonus,
+    moonOrbBonus: params.moonOrbBonus,
+  };
+  const personA = calculateNatal({ ...params.personA, ...filterParams });
+  const personB = calculateNatal({ ...params.personB, ...filterParams });
+  const crossAspects = detectCrossAspects(personA.planets, personB.planets, toAspectConfig(filterParams));
   return {
     personA, personB, crossAspects,
     meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString() },
@@ -119,9 +167,16 @@ export function calculateSynastry(params: {
 export function calculateComposite(params: {
   personA: Parameters<typeof calculateNatal>[0];
   personB: Parameters<typeof calculateNatal>[0];
-}): NatalChartData {
-  const chartA = calculateNatal(params.personA);
-  const chartB = calculateNatal(params.personB);
+} & EngineFilterParams): NatalChartData {
+  const filterParams: EngineFilterParams = {
+    enabledPlanets: params.enabledPlanets,
+    enabledAspects: params.enabledAspects,
+    aspectOrbs: params.aspectOrbs,
+    sunOrbBonus: params.sunOrbBonus,
+    moonOrbBonus: params.moonOrbBonus,
+  };
+  const chartA = calculateNatal({ ...params.personA, ...filterParams });
+  const chartB = calculateNatal({ ...params.personB, ...filterParams });
 
   const SIGN_NAMES: readonly SignName[] = [
     'ARI', 'TAU', 'GEM', 'CAN', 'LEO', 'VIR',
@@ -148,7 +203,7 @@ export function calculateComposite(params: {
     };
   });
 
-  const aspects = detectAspects(planets);
+  const aspects = detectAspects(planets, 1, toAspectConfig(filterParams));
 
   // Composite houses: use midpoint ASC and midpoint lat/lon
   const midLat = (params.personA.lat + params.personB.lat) / 2;
@@ -165,12 +220,16 @@ export function calculateComposite(params: {
 
     const { houses } = calcHouses(midJd, midLat, midLon, params.personA.houseSystem);
 
-    const angles = {
+    const angles: import('./types.js').ChartAngles = {
       asc: compositeAsc,
       mc: compositeMc,
       dsc: (compositeAsc + 180) % 360,
       ic: (compositeMc + 180) % 360,
+      vertex: chartA.angles && chartB.angles ? midpointLongitude(chartA.angles.vertex, chartB.angles.vertex) : 0,
+      eastPoint: chartA.angles && chartB.angles ? midpointLongitude(chartA.angles.eastPoint, chartB.angles.eastPoint) : 0,
+      partOfFortune: 0,
     };
+    computePartOfFortune(angles, planets);
 
     return {
       planets, houses, angles, aspects,
@@ -211,6 +270,7 @@ const MAJOR_ASPECT_ANGLES: [AspectType, number][] = [
 export function calculateEphemeris(params: {
   year: number;
   month: number;
+  enabledPlanets?: PlanetId[];
 }): EphemerisData {
   const { year, month } = params;
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -223,7 +283,7 @@ export function calculateEphemeris(params: {
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     dates.push(dateStr);
     const jd = toJulianDay(year, month, day, 12);
-    dailyPositions.push(calcPlanets(jd));
+    dailyPositions.push(calcPlanets(jd, params.enabledPlanets));
   }
 
   // Detect events by comparing consecutive days
@@ -314,4 +374,17 @@ export function calculateEphemeris(params: {
 function angularDist(a: number, b: number): number {
   const diff = Math.abs(a - b) % 360;
   return diff > 180 ? 360 - diff : diff;
+}
+
+export function calculateVocMoon(params: {
+  year: number;
+  month: number;
+}): VocMoonData {
+  const periods = calculateVocPeriods(params.year, params.month);
+  return {
+    year: params.year,
+    month: params.month,
+    periods,
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString() },
+  };
 }

@@ -1,7 +1,21 @@
 import { z } from 'zod';
 
+const PlanetIdEnum = z.enum([
+  'SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO',
+  'TRUE_NODE', 'CHIRON',
+  'MEAN_NODE', 'MEAN_LILITH', 'TRUE_LILITH',
+  'PHOLUS', 'CERES', 'PALLAS', 'JUNO', 'VESTA',
+]);
+
+const AspectTypeEnum = z.enum([
+  'CONJUNCTION', 'OPPOSITION', 'TRINE', 'SQUARE', 'SEXTILE',
+  'QUINCUNX', 'SEMISEXTILE', 'SEMISQUARE', 'SESQUIQUADRATE', 'QUINTILE',
+]);
+
+export { PlanetIdEnum, AspectTypeEnum };
+
 const PlanetPositionSchema = z.object({
-  id: z.enum(['SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO', 'TRUE_NODE', 'CHIRON']),
+  id: PlanetIdEnum,
   longitude: z.number(),
   latitude: z.number(),
   speed: z.number(),
@@ -21,12 +35,15 @@ const ChartAnglesSchema = z.object({
   mc: z.number(),
   dsc: z.number(),
   ic: z.number(),
+  vertex: z.number(),
+  eastPoint: z.number(),
+  partOfFortune: z.number(),
 });
 
 const AspectSchema = z.object({
-  planetA: z.enum(['SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO', 'TRUE_NODE', 'CHIRON']),
-  planetB: z.enum(['SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO', 'TRUE_NODE', 'CHIRON']),
-  type: z.enum(['CONJUNCTION', 'OPPOSITION', 'TRINE', 'SQUARE', 'SEXTILE', 'QUINCUNX', 'SEMISEXTILE', 'SEMISQUARE', 'SESQUIQUADRATE', 'QUINTILE']),
+  planetA: PlanetIdEnum,
+  planetB: PlanetIdEnum,
+  type: AspectTypeEnum,
   angle: z.number(),
   orb: z.number(),
   applying: z.boolean(),
@@ -78,10 +95,10 @@ const EphemerisDaySchema = z.object({
 const EphemerisEventSchema = z.object({
   date: z.string(),
   type: z.enum(['INGRESS', 'STATION_RETROGRADE', 'STATION_DIRECT', 'EXACT_ASPECT']),
-  planet: z.enum(['SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO', 'TRUE_NODE', 'CHIRON']),
+  planet: PlanetIdEnum,
   detail: z.string(),
-  targetPlanet: z.enum(['SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO', 'TRUE_NODE', 'CHIRON']).optional(),
-  aspectType: z.enum(['CONJUNCTION', 'OPPOSITION', 'TRINE', 'SQUARE', 'SEXTILE', 'QUINCUNX', 'SEMISEXTILE', 'SEMISQUARE', 'SESQUIQUADRATE', 'QUINTILE']).optional(),
+  targetPlanet: PlanetIdEnum.optional(),
+  aspectType: AspectTypeEnum.optional(),
 });
 
 export const EphemerisDataSchema = z.object({
@@ -89,6 +106,24 @@ export const EphemerisDataSchema = z.object({
   month: z.number(),
   days: z.array(EphemerisDaySchema),
   events: z.array(EphemerisEventSchema),
+  meta: z.object({
+    schemaVersion: z.number(),
+    calculatedAt: z.string(),
+  }),
+});
+
+const VocMoonPeriodSchema = z.object({
+  start: z.string(),
+  end: z.string(),
+  lastAspectPlanet: PlanetIdEnum,
+  lastAspectType: AspectTypeEnum,
+  endSign: z.enum(['ARI', 'TAU', 'GEM', 'CAN', 'LEO', 'VIR', 'LIB', 'SCO', 'SAG', 'CAP', 'AQU', 'PIS']),
+});
+
+export const VocMoonDataSchema = z.object({
+  year: z.number(),
+  month: z.number(),
+  periods: z.array(VocMoonPeriodSchema),
   meta: z.object({
     schemaVersion: z.number(),
     calculatedAt: z.string(),
