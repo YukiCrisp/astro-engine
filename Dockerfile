@@ -2,7 +2,7 @@ FROM node:22-alpine AS build
 RUN apk add --no-cache python3 make g++ curl
 RUN npm install -g bun
 WORKDIR /app
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 COPY scripts/download-ephe.sh scripts/
 RUN sh scripts/download-ephe.sh /app/ephe

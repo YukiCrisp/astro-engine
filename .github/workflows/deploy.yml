@@ -1,7 +1,8 @@
-name: Deploy
+name: Deploy to Fly.io
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
