@@ -81,10 +81,9 @@ export function detectCrossAspects(
   const aspects: Aspect[] = [];
   for (const a of planetsA) {
     for (const b of planetsB) {
-      if (a.id === b.id) continue;
       const dist = angularDistance(a.longitude, b.longitude);
       for (const [type, angle] of angles) {
-        const maxOrb = getOrb(type, a.id, b.id, config?.orbOverrides, config?.sunOrbBonus, config?.moonOrbBonus) * 0.5;
+        const maxOrb = getOrb(type, a.id, b.id, config?.orbOverrides, config?.sunOrbBonus, config?.moonOrbBonus);
         const orb = Math.abs(dist - angle);
         if (orb <= maxOrb) {
           aspects.push({ planetA: a.id, planetB: b.id, type, angle, orb, applying: false });
