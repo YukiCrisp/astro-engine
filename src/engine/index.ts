@@ -267,6 +267,14 @@ const MAJOR_ASPECT_ANGLES: [AspectType, number][] = [
   ['CONJUNCTION', 0], ['OPPOSITION', 180], ['TRINE', 120], ['SQUARE', 90], ['SEXTILE', 60],
 ];
 
+/** Signed orb that crosses zero at the exact aspect for all aspect types. */
+function signedAspectOrb(longA: number, longB: number, exactAngle: number): number {
+  const shiftedB = (longB + exactAngle) % 360;
+  let diff = longA - shiftedB;
+  diff = ((diff % 360) + 540) % 360 - 180;
+  return diff;
+}
+
 export function calculateEphemeris(params: {
   year: number;
   month: number;
@@ -341,13 +349,9 @@ export function calculateEphemeris(params: {
         const tomorrowB = tomorrow.find((p) => p.id === todayB.id);
         if (!tomorrowA || !tomorrowB) continue;
 
-        const distToday = angularDist(todayA.longitude, todayB.longitude);
-        const distTomorrow = angularDist(tomorrowA.longitude, tomorrowB.longitude);
-
         for (const [aspectType, exactAngle] of MAJOR_ASPECT_ANGLES) {
-          const orbToday = distToday - exactAngle;
-          const orbTomorrow = distTomorrow - exactAngle;
-          // Check if orb crosses zero (sign change in orb)
+          const orbToday = signedAspectOrb(todayA.longitude, todayB.longitude, exactAngle);
+          const orbTomorrow = signedAspectOrb(tomorrowA.longitude, tomorrowB.longitude, exactAngle);
           if (Math.abs(orbToday) <= 1.5 && orbToday * orbTomorrow < 0) {
             events.push({
               date,
@@ -369,11 +373,6 @@ export function calculateEphemeris(params: {
     events,
     meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString() },
   };
-}
-
-function angularDist(a: number, b: number): number {
-  const diff = Math.abs(a - b) % 360;
-  return diff > 180 ? 360 - diff : diff;
 }
 
 export function calculateVocMoon(params: {
