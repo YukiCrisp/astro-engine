@@ -205,28 +205,27 @@ export function calculateComposite(params: {
 
   const aspects = detectAspects(planets, 1, toAspectConfig(filterParams));
 
-  // Composite houses: use midpoint ASC and midpoint lat/lon
-  const midLat = (params.personA.lat + params.personB.lat) / 2;
-  const midLon = midpointLongitude(params.personA.lon, params.personB.lon);
-
   if (chartA.angles && chartB.angles && params.personA.birthTime !== null && params.personB.birthTime !== null) {
     const compositeAsc = midpointLongitude(chartA.angles.asc, chartB.angles.asc);
     const compositeMc = midpointLongitude(chartA.angles.mc, chartB.angles.mc);
 
-    // Use the midpoint JD for house calculation
-    const jdA = chartA.meta.julianDay;
-    const jdB = chartB.meta.julianDay;
-    const midJd = (jdA + jdB) / 2;
+    // Equal Houses from composite ASC — 12 cusps at 30° intervals.
+    // This ensures houses[0].longitude === compositeAsc, so the wheel
+    // rotation, house lines, and ASC label all agree.
+    const houses: import('./types.js').HouseCusp[] = Array.from({ length: 12 }, (_, i) => ({
+      house: i + 1,
+      longitude: (compositeAsc + i * 30) % 360,
+    }));
 
-    const { houses } = calcHouses(midJd, midLat, midLon, params.personA.houseSystem);
+    const midJd = (chartA.meta.julianDay + chartB.meta.julianDay) / 2;
 
     const angles: import('./types.js').ChartAngles = {
       asc: compositeAsc,
       mc: compositeMc,
       dsc: (compositeAsc + 180) % 360,
       ic: (compositeMc + 180) % 360,
-      vertex: chartA.angles && chartB.angles ? midpointLongitude(chartA.angles.vertex, chartB.angles.vertex) : 0,
-      eastPoint: chartA.angles && chartB.angles ? midpointLongitude(chartA.angles.eastPoint, chartB.angles.eastPoint) : 0,
+      vertex: midpointLongitude(chartA.angles.vertex, chartB.angles.vertex),
+      eastPoint: midpointLongitude(chartA.angles.eastPoint, chartB.angles.eastPoint),
       partOfFortune: 0,
     };
     computePartOfFortune(angles, planets);
