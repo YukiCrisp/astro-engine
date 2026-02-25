@@ -44,8 +44,8 @@ describe('Einstein natal chart accuracy', () => {
     expect(chiron).toBeDefined();
   });
 
-  it('returns 12 planets (including TRUE_NODE and CHIRON)', () => {
+  it('returns 20 planets (including nodes, liliths, and asteroids)', () => {
     const planets = calcPlanets(jd);
-    expect(planets.length).toBe(12);
+    expect(planets.length).toBe(20);
   });
 });

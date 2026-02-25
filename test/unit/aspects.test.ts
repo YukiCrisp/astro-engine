@@ -101,18 +101,19 @@ describe('detectCrossAspects', () => {
     expect(aspects[0].type).toBe('CONJUNCTION');
   });
 
-  it('rejects aspects beyond halved orb', () => {
-    // Non-luminary conjunction halved orb = 4, 5° apart = orb 5 > 4
+  it('rejects aspects beyond full orb', () => {
+    // Non-luminary conjunction orb = 8, 9° apart = orb 9 > 8
     const a = [makePlanet('MARS', 0)];
-    const b = [makePlanet('SATURN', 5)];
+    const b = [makePlanet('SATURN', 9)];
     const aspects = detectCrossAspects(a, b);
     expect(aspects).toHaveLength(0);
   });
 
-  it('skips same-planet pairs', () => {
+  it('allows same-planet pairs across charts', () => {
     const a = [makePlanet('SUN', 0)];
     const b = [makePlanet('SUN', 0)];
     const aspects = detectCrossAspects(a, b);
-    expect(aspects).toHaveLength(0);
+    expect(aspects).toHaveLength(1);
+    expect(aspects[0].type).toBe('CONJUNCTION');
   });
 });
