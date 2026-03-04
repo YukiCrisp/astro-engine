@@ -13,6 +13,7 @@ import { synastryRoute } from './routes/synastry.js';
 import { compositeRoute } from './routes/composite.js';
 import { ephemerisRoute } from './routes/ephemeris.js';
 import { vocMoonRoute } from './routes/voc-moon.js';
+import { natalAnalysisRoute } from './routes/natal-analysis.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
@@ -68,6 +69,7 @@ export async function buildApp() {
 
   await app.register(healthRoute);
   await app.register(natalRoute);
+  await app.register(natalAnalysisRoute);
   await app.register(progressedRoute);
   await app.register(transitRoute);
   await app.register(tripleRoute);

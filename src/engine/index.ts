@@ -4,6 +4,8 @@ import type { AspectConfig } from './calculations/aspects.js';
 import { getProgressedJulianDay } from './calculations/progressions.js';
 import { midpointLongitude } from './calculations/composite.js';
 import { calculateVocPeriods } from './calculations/voc-moon.js';
+import { analyzeChart } from './calculations/chart-analysis.js';
+import type { ChartAnalysis } from './calculations/chart-analysis.js';
 import { buildJulianDay, toJulianDay } from '../utils/date.js';
 import { SCHEMA_VERSION } from './types.js';
 import type {
@@ -62,6 +64,16 @@ export function calculateNatal(params: {
     planets, houses, angles, aspects,
     meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, julianDay: jd },
   };
+}
+
+export function calculateNatalAnalysis(params: {
+  birthDate: string; birthTime: string | null;
+  lat: number; lon: number;
+  utcOffsetMinutes: number; houseSystem: HouseSystem;
+} & EngineFilterParams): NatalChartData & { analysis: ChartAnalysis } {
+  const chart = calculateNatal(params);
+  const analysis = analyzeChart(chart.planets, chart.houses, chart.angles);
+  return { ...chart, analysis };
 }
 
 export function calculateProgressed(params: {
