@@ -4,7 +4,7 @@
 - **Framework:** Fastify 5 with fastify-type-provider-zod
 - **Swiss Ephemeris:** sweph (use `"sweph": "latest"` -- only pre-release versions exist)
 - **Tests:** Vitest (`bun run test`)
-- **Dev server:** `bun run dev` (tsx watch)
+- **Dev server:** `bun run dev` (tsx watch, port 3001)
 
 ## Verification
 - `bun run build` -- compile TypeScript
