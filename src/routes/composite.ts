@@ -3,6 +3,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { CompositeRequestSchema } from '../schemas/composite.js';
 import { NatalChartDataSchema } from '../schemas/responses.js';
 import { calculateComposite } from '../engine/index.js';
+import { chartCache } from '../engine/cache.js';
 
 export async function compositeRoute(app: FastifyInstance) {
   app.withTypeProvider<ZodTypeProvider>().route({
@@ -15,6 +16,9 @@ export async function compositeRoute(app: FastifyInstance) {
       body: CompositeRequestSchema,
       response: { 200: NatalChartDataSchema },
     },
-    handler: async (req) => calculateComposite(req.body),
+    handler: async (req) => {
+      const cacheKey = chartCache.generateKey(req.body as Record<string, unknown>);
+      return chartCache.getOrSet(cacheKey, () => calculateComposite(req.body), chartCache.natalTtlMs);
+    },
   });
 }

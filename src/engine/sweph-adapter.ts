@@ -1,6 +1,6 @@
-import { calc_ut, houses_ex2, set_ephe_path, constants } from 'sweph';
+import { calc_ut, houses_ex2, fixstar2_ut, set_ephe_path, set_sid_mode, constants } from 'sweph';
 import { readdirSync } from 'node:fs';
-import type { PlanetId, PlanetPosition, HouseCusp, ChartAngles, HouseSystem, SignName } from './types.js';
+import type { PlanetId, PlanetPosition, HouseCusp, ChartAngles, HouseSystem, ZodiacSystem, SignName } from './types.js';
 
 const PLANET_MAP: Record<PlanetId, number> = {
   SUN: constants.SE_SUN,
@@ -39,10 +39,45 @@ const SIGN_NAMES: readonly SignName[] = [
 ];
 
 const CALC_FLAGS = constants.SEFLG_SWIEPH | constants.SEFLG_SPEED;
+const CALC_FLAGS_SIDEREAL = CALC_FLAGS | constants.SEFLG_SIDEREAL;
+
+/** Configure sweph for sidereal mode using Lahiri ayanamsa. */
+function enableSiderealMode(): void {
+  set_sid_mode(constants.SE_SIDM_LAHIRI, 0, 0);
+}
+
+/** Get the appropriate calc flags for the given zodiac system. */
+function calcFlagsForZodiac(zodiacSystem?: ZodiacSystem): number {
+  if (zodiacSystem === 'sidereal') {
+    enableSiderealMode();
+    return CALC_FLAGS_SIDEREAL;
+  }
+  return CALC_FLAGS;
+}
+
+/** Mean obliquity of the ecliptic in degrees. */
+const OBLIQUITY_DEG = 23.4393;
+const OBLIQUITY_RAD = OBLIQUITY_DEG * Math.PI / 180;
+
+/** Compute declination from ecliptic longitude and latitude (all in degrees). */
+function computeDeclination(lonDeg: number, latDeg: number): number {
+  const lonRad = lonDeg * Math.PI / 180;
+  const latRad = latDeg * Math.PI / 180;
+  const decRad = Math.asin(
+    Math.sin(latRad) * Math.cos(OBLIQUITY_RAD) +
+    Math.cos(latRad) * Math.sin(OBLIQUITY_RAD) * Math.sin(lonRad)
+  );
+  return decRad * 180 / Math.PI;
+}
 
 const HOUSE_SYSTEM_MAP: Record<HouseSystem, string> = {
   PLACIDUS: 'P',
   WHOLE_SIGN: 'W',
+  KOCH: 'K',
+  REGIOMONTANUS: 'R',
+  CAMPANUS: 'C',
+  EQUAL: 'E',
+  PORPHYRY: 'O',
 };
 
 /** Bodies that require supplementary ephemeris files (seas_*.se1). */
@@ -80,11 +115,12 @@ export function epheFilesPresent(): boolean {
   }
 }
 
-export function calcPlanets(jd: number, enabledPlanets?: PlanetId[]): PlanetPosition[] {
+export function calcPlanets(jd: number, enabledPlanets?: PlanetId[], zodiacSystem?: ZodiacSystem): PlanetPosition[] {
   const ids = enabledPlanets ?? PLANET_IDS;
+  const flags = calcFlagsForZodiac(zodiacSystem);
   return ids.flatMap((id): PlanetPosition[] => {
     if (EXTRA_EPHE_BODIES.has(id) && !extraEpheAvailable) return [];
-    const result = calc_ut(jd, PLANET_MAP[id], CALC_FLAGS);
+    const result = calc_ut(jd, PLANET_MAP[id], flags);
     if (result.flag < 0) {
       throw new Error(`sweph calc_ut failed for ${id}: ${result.error}`);
     }
@@ -101,12 +137,14 @@ export function calcPlanets(jd: number, enabledPlanets?: PlanetId[]): PlanetPosi
       sign,
       signName: SIGN_NAMES[sign],
       degree: lon % 30,
+      declination: computeDeclination(lon, lat),
     }];
   });
 }
 
-export function calcSinglePlanet(jd: number, id: PlanetId): PlanetPosition {
-  const result = calc_ut(jd, PLANET_MAP[id], CALC_FLAGS);
+export function calcSinglePlanet(jd: number, id: PlanetId, zodiacSystem?: ZodiacSystem): PlanetPosition {
+  const flags = calcFlagsForZodiac(zodiacSystem);
+  const result = calc_ut(jd, PLANET_MAP[id], flags);
   if (result.flag < 0) {
     throw new Error(`sweph calc_ut failed for ${id}: ${result.error}`);
   }
@@ -123,13 +161,38 @@ export function calcSinglePlanet(jd: number, id: PlanetId): PlanetPosition {
     sign,
     signName: SIGN_NAMES[sign],
     degree: lon % 30,
+    declination: computeDeclination(lon, lat),
   };
 }
 
+export interface FixedStarRaw {
+  longitude: number;
+  latitude: number;
+}
+
+/**
+ * Try to calculate a fixed star position using sweph's fixstar2_ut.
+ * Returns null if the function fails (e.g. sefstars.txt not found).
+ */
+export function calcFixedStar(starName: string, jd: number): FixedStarRaw | null {
+  try {
+    const flags = constants.SEFLG_SWIEPH;
+    const result = fixstar2_ut(starName, jd, flags);
+    if (result.flag === constants.ERR) return null;
+    return { longitude: result.data[0], latitude: result.data[1] };
+  } catch {
+    return null;
+  }
+}
+
 export function calcHouses(
-  jd: number, lat: number, lon: number, system: HouseSystem
+  jd: number, lat: number, lon: number, system: HouseSystem, zodiacSystem?: ZodiacSystem
 ): { houses: HouseCusp[]; angles: ChartAngles } {
-  const result = houses_ex2(jd, 0, lat, lon, HOUSE_SYSTEM_MAP[system]);
+  const hsysFlags = zodiacSystem === 'sidereal' ? constants.SEFLG_SIDEREAL : 0;
+  if (zodiacSystem === 'sidereal') {
+    enableSiderealMode();
+  }
+  const result = houses_ex2(jd, hsysFlags, lat, lon, HOUSE_SYSTEM_MAP[system]);
   const houses: HouseCusp[] = Array.from({ length: 12 }, (_, i) => ({
     house: i + 1,
     longitude: result.data.houses[i],

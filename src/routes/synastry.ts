@@ -3,6 +3,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { SynastryRequestSchema } from '../schemas/synastry.js';
 import { SynastryChartDataSchema } from '../schemas/responses.js';
 import { calculateSynastry } from '../engine/index.js';
+import { chartCache } from '../engine/cache.js';
 
 export async function synastryRoute(app: FastifyInstance) {
   app.withTypeProvider<ZodTypeProvider>().route({
@@ -15,6 +16,9 @@ export async function synastryRoute(app: FastifyInstance) {
       body: SynastryRequestSchema,
       response: { 200: SynastryChartDataSchema },
     },
-    handler: async (req) => calculateSynastry(req.body),
+    handler: async (req) => {
+      const cacheKey = chartCache.generateKey(req.body as Record<string, unknown>);
+      return chartCache.getOrSet(cacheKey, () => calculateSynastry(req.body), chartCache.natalTtlMs);
+    },
   });
 }

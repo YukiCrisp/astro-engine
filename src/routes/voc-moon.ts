@@ -3,6 +3,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { EphemerisRequestSchema } from '../schemas/ephemeris.js';
 import { VocMoonDataSchema } from '../schemas/responses.js';
 import { calculateVocMoon } from '../engine/index.js';
+import { chartCache } from '../engine/cache.js';
 
 export async function vocMoonRoute(app: FastifyInstance) {
   app.withTypeProvider<ZodTypeProvider>().route({
@@ -15,6 +16,9 @@ export async function vocMoonRoute(app: FastifyInstance) {
       body: EphemerisRequestSchema,
       response: { 200: VocMoonDataSchema },
     },
-    handler: async (req) => calculateVocMoon(req.body),
+    handler: async (req) => {
+      const cacheKey = chartCache.generateKey(req.body as Record<string, unknown>);
+      return chartCache.getOrSet(cacheKey, () => calculateVocMoon(req.body), chartCache.transitTtlMs);
+    },
   });
 }

@@ -4,6 +4,7 @@ import swagger from '@fastify/swagger';
 import swaggerUI from '@fastify/swagger-ui';
 import { serializerCompiler, validatorCompiler, jsonSchemaTransform } from 'fastify-type-provider-zod';
 import { ZodError } from 'zod';
+import { chartCache } from './engine/cache.js';
 import { healthRoute } from './routes/health.js';
 import { natalRoute } from './routes/natal.js';
 import { progressedRoute } from './routes/progressed.js';
@@ -14,6 +15,9 @@ import { compositeRoute } from './routes/composite.js';
 import { ephemerisRoute } from './routes/ephemeris.js';
 import { vocMoonRoute } from './routes/voc-moon.js';
 import { natalAnalysisRoute } from './routes/natal-analysis.js';
+import { solarReturnRoute } from './routes/solar-return.js';
+import { solarArcRoute } from './routes/solar-arc.js';
+import { lunarReturnRoute } from './routes/lunar-return.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
@@ -77,6 +81,15 @@ export async function buildApp() {
   await app.register(compositeRoute);
   await app.register(ephemerisRoute);
   await app.register(vocMoonRoute);
+  await app.register(solarReturnRoute);
+  await app.register(solarArcRoute);
+  await app.register(lunarReturnRoute);
+
+  app.get('/v1/cache/stats', async () => chartCache.stats());
+  app.post('/v1/cache/clear', async () => {
+    chartCache.clear();
+    return { cleared: true };
+  });
 
   return app;
 }

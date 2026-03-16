@@ -3,6 +3,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { EphemerisRequestSchema } from '../schemas/ephemeris.js';
 import { EphemerisDataSchema } from '../schemas/responses.js';
 import { calculateEphemeris } from '../engine/index.js';
+import { chartCache } from '../engine/cache.js';
 
 export async function ephemerisRoute(app: FastifyInstance) {
   app.withTypeProvider<ZodTypeProvider>().route({
@@ -15,6 +16,9 @@ export async function ephemerisRoute(app: FastifyInstance) {
       body: EphemerisRequestSchema,
       response: { 200: EphemerisDataSchema },
     },
-    handler: async (req) => calculateEphemeris(req.body),
+    handler: async (req) => {
+      const cacheKey = chartCache.generateKey(req.body as Record<string, unknown>);
+      return chartCache.getOrSet(cacheKey, () => calculateEphemeris(req.body), chartCache.transitTtlMs);
+    },
   });
 }

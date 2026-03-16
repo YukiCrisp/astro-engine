@@ -7,6 +7,7 @@ export const TransitRequestSchema = z.object({
   lat: z.number().min(-90).max(90).describe('Latitude of location').meta({ example: 48.4011 }),
   lon: z.number().min(-180).max(180).describe('Longitude of location').meta({ example: 9.9876 }),
   utcOffsetMinutes: z.number().int().min(-840).max(840).describe('UTC offset in minutes').meta({ example: 120 }),
-  houseSystem: z.enum(['PLACIDUS', 'WHOLE_SIGN']).default('PLACIDUS').describe('House system'),
+  houseSystem: z.enum(['PLACIDUS', 'WHOLE_SIGN', 'KOCH', 'REGIOMONTANUS', 'CAMPANUS', 'EQUAL', 'PORPHYRY']).default('PLACIDUS').describe('House system'),
+  zodiacSystem: z.enum(['tropical', 'sidereal']).default('tropical').describe('Zodiac system (tropical or sidereal/Lahiri)'),
 }).merge(EngineFilterSchema);
 export type TransitRequest = z.infer<typeof TransitRequestSchema>;

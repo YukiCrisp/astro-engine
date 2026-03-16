@@ -3,6 +3,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { TripleRequestSchema } from '../schemas/triple.js';
 import { TripleChartDataSchema } from '../schemas/responses.js';
 import { calculateTriple } from '../engine/index.js';
+import { chartCache } from '../engine/cache.js';
 
 export async function tripleRoute(app: FastifyInstance) {
   app.withTypeProvider<ZodTypeProvider>().route({
@@ -16,18 +17,21 @@ export async function tripleRoute(app: FastifyInstance) {
       response: { 200: TripleChartDataSchema },
     },
     handler: async (req) => {
-      const { natal, progressed, transit, computeCrossAspects, enabledPlanets, enabledAspects, aspectOrbs, sunOrbBonus, moonOrbBonus } = req.body;
-      return calculateTriple({
-        natal,
-        progressedDate: progressed.progressedDate,
-        transit,
-        computeCrossAspects,
-        enabledPlanets,
-        enabledAspects,
-        aspectOrbs,
-        sunOrbBonus,
-        moonOrbBonus,
-      });
+      const cacheKey = chartCache.generateKey(req.body as Record<string, unknown>);
+      return chartCache.getOrSet(cacheKey, () => {
+        const { natal, progressed, transit, computeCrossAspects, enabledPlanets, enabledAspects, aspectOrbs, sunOrbBonus, moonOrbBonus } = req.body;
+        return calculateTriple({
+          natal,
+          progressedDate: progressed.progressedDate,
+          transit,
+          computeCrossAspects,
+          enabledPlanets,
+          enabledAspects,
+          aspectOrbs,
+          sunOrbBonus,
+          moonOrbBonus,
+        });
+      }, chartCache.transitTtlMs);
     },
   });
 }

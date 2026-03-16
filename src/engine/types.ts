@@ -11,7 +11,9 @@ export type SignName =
   | 'ARI' | 'TAU' | 'GEM' | 'CAN' | 'LEO' | 'VIR'
   | 'LIB' | 'SCO' | 'SAG' | 'CAP' | 'AQU' | 'PIS';
 
-export type HouseSystem = 'PLACIDUS' | 'WHOLE_SIGN';
+export type HouseSystem = 'PLACIDUS' | 'WHOLE_SIGN' | 'KOCH' | 'REGIOMONTANUS' | 'CAMPANUS' | 'EQUAL' | 'PORPHYRY';
+
+export type ZodiacSystem = 'tropical' | 'sidereal';
 
 export type AspectType =
   | 'CONJUNCTION' | 'OPPOSITION' | 'TRINE' | 'SQUARE' | 'SEXTILE'
@@ -26,6 +28,7 @@ export interface PlanetPosition {
   sign: number;
   signName: SignName;
   degree: number;
+  declination: number;
 }
 
 export interface HouseCusp {
@@ -52,15 +55,36 @@ export interface Aspect {
   applying: boolean;
 }
 
+export type ArabicPartId = 'PART_OF_FORTUNE' | 'PART_OF_SPIRIT' | 'PART_OF_EROS' | 'PART_OF_MARRIAGE';
+
+export interface ArabicPartResult {
+  id: ArabicPartId;
+  name: string;
+  longitude: number;
+  sign: SignName;
+  signDegree: number;
+}
+
+export interface FixedStar {
+  name: string;
+  longitude: number;
+  latitude: number;
+  sign: string;
+  signDegree: number;
+}
+
 export interface NatalChartData {
   planets: PlanetPosition[];
   houses: HouseCusp[] | null;
   angles: ChartAngles | null;
   aspects: Aspect[];
+  arabicParts?: ArabicPartResult[];
+  fixedStars?: FixedStar[];
   meta: {
     schemaVersion: number;
     calculatedAt: string;
     houseSystem: HouseSystem;
+    zodiacSystem?: ZodiacSystem;
     julianDay: number;
   };
 }

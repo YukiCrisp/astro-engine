@@ -12,7 +12,11 @@ const AspectTypeEnum = z.enum([
   'QUINCUNX', 'SEMISEXTILE', 'SEMISQUARE', 'SESQUIQUADRATE', 'QUINTILE',
 ]);
 
-export { PlanetIdEnum, AspectTypeEnum };
+const ArabicPartIdEnum = z.enum([
+  'PART_OF_FORTUNE', 'PART_OF_SPIRIT', 'PART_OF_EROS', 'PART_OF_MARRIAGE',
+]);
+
+export { PlanetIdEnum, AspectTypeEnum, ArabicPartIdEnum };
 
 const PlanetPositionSchema = z.object({
   id: PlanetIdEnum,
@@ -49,15 +53,34 @@ const AspectSchema = z.object({
   applying: z.boolean(),
 });
 
+const ArabicPartResultSchema = z.object({
+  id: ArabicPartIdEnum,
+  name: z.string(),
+  longitude: z.number(),
+  sign: z.enum(['ARI', 'TAU', 'GEM', 'CAN', 'LEO', 'VIR', 'LIB', 'SCO', 'SAG', 'CAP', 'AQU', 'PIS']),
+  signDegree: z.number(),
+});
+
+const FixedStarSchema = z.object({
+  name: z.string(),
+  longitude: z.number(),
+  latitude: z.number(),
+  sign: z.string(),
+  signDegree: z.number(),
+});
+
 export const NatalChartDataSchema = z.object({
   planets: z.array(PlanetPositionSchema),
   houses: z.array(HouseCuspSchema).nullable(),
   angles: ChartAnglesSchema.nullable(),
   aspects: z.array(AspectSchema),
+  arabicParts: z.array(ArabicPartResultSchema).optional(),
+  fixedStars: z.array(FixedStarSchema).optional(),
   meta: z.object({
     schemaVersion: z.number(),
     calculatedAt: z.string(),
-    houseSystem: z.enum(['PLACIDUS', 'WHOLE_SIGN']),
+    houseSystem: z.enum(['PLACIDUS', 'WHOLE_SIGN', 'KOCH', 'REGIOMONTANUS', 'CAMPANUS', 'EQUAL', 'PORPHYRY']),
+    zodiacSystem: z.enum(['tropical', 'sidereal']).optional(),
     julianDay: z.number(),
   }),
 });

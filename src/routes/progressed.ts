@@ -3,6 +3,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { ProgressedRequestSchema } from '../schemas/progressed.js';
 import { NatalChartDataSchema } from '../schemas/responses.js';
 import { calculateProgressed } from '../engine/index.js';
+import { chartCache } from '../engine/cache.js';
 
 export async function progressedRoute(app: FastifyInstance) {
   app.withTypeProvider<ZodTypeProvider>().route({
@@ -15,6 +16,9 @@ export async function progressedRoute(app: FastifyInstance) {
       body: ProgressedRequestSchema,
       response: { 200: NatalChartDataSchema },
     },
-    handler: async (req) => calculateProgressed(req.body),
+    handler: async (req) => {
+      const cacheKey = chartCache.generateKey(req.body as Record<string, unknown>);
+      return chartCache.getOrSet(cacheKey, () => calculateProgressed(req.body), chartCache.natalTtlMs);
+    },
   });
 }

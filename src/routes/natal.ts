@@ -3,6 +3,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { NatalRequestSchema } from '../schemas/natal.js';
 import { NatalChartDataSchema } from '../schemas/responses.js';
 import { calculateNatal } from '../engine/index.js';
+import { chartCache } from '../engine/cache.js';
 
 export async function natalRoute(app: FastifyInstance) {
   app.withTypeProvider<ZodTypeProvider>().route({
@@ -15,6 +16,9 @@ export async function natalRoute(app: FastifyInstance) {
       body: NatalRequestSchema,
       response: { 200: NatalChartDataSchema },
     },
-    handler: async (req) => calculateNatal(req.body),
+    handler: async (req) => {
+      const cacheKey = chartCache.generateKey(req.body as Record<string, unknown>);
+      return chartCache.getOrSet(cacheKey, () => calculateNatal(req.body), chartCache.natalTtlMs);
+    },
   });
 }

@@ -2,14 +2,20 @@ import { calcPlanets, calcHouses } from './sweph-adapter.js';
 import { detectAspects, detectCrossAspects } from './calculations/aspects.js';
 import type { AspectConfig } from './calculations/aspects.js';
 import { getProgressedJulianDay } from './calculations/progressions.js';
+import { calculateSolarArcPositions } from './calculations/solar-arc.js';
+import { findSolarReturnJD } from './calculations/solar-return.js';
+import { findLunarReturnJD } from './calculations/lunar-return.js';
 import { midpointLongitude } from './calculations/composite.js';
 import { calculateVocPeriods } from './calculations/voc-moon.js';
 import { analyzeChart } from './calculations/chart-analysis.js';
 import type { ChartAnalysis } from './calculations/chart-analysis.js';
-import { buildJulianDay, toJulianDay } from '../utils/date.js';
+import { calculateArabicParts } from './calculations/arabic-parts.js';
+import type { ArabicPartId } from './calculations/arabic-parts.js';
+import { calculateFixedStars } from './calculations/fixed-stars.js';
+import { buildJulianDay, toJulianDay, parseDateString } from '../utils/date.js';
 import { SCHEMA_VERSION } from './types.js';
 import type {
-  NatalChartData, HouseSystem, TripleChartData,
+  NatalChartData, HouseSystem, ZodiacSystem, TripleChartData,
   SynastryChartData, EphemerisData, EphemerisEvent,
   VocMoonData,
   PlanetId, PlanetPosition, AspectType, SignName,
@@ -29,6 +35,44 @@ export interface EngineFilterParams {
   aspectOrbs?: Partial<Record<AspectType, number>>;
   sunOrbBonus?: number;
   moonOrbBonus?: number;
+  enabledArabicParts?: ArabicPartId[];
+  includeFixedStars?: boolean;
+}
+
+function computeArabicParts(
+  angles: import('./types.js').ChartAngles,
+  planets: import('./types.js').PlanetPosition[],
+  houses: import('./types.js').HouseCusp[],
+  enabledParts: ArabicPartId[],
+): import('./types.js').ArabicPartResult[] {
+  const sun = planets.find(p => p.id === 'SUN');
+  const moon = planets.find(p => p.id === 'MOON');
+  const venus = planets.find(p => p.id === 'VENUS');
+  if (!sun || !moon || !venus) return [];
+
+  // Determine day/night: Sun above horizon = houses 7-12
+  const sunHouse = getHouseForLongitude(sun.longitude, houses);
+  const isDayChart = sunHouse >= 7;
+
+  return calculateArabicParts(
+    angles.asc, sun.longitude, moon.longitude,
+    venus.longitude, angles.dsc, isDayChart, enabledParts,
+  );
+}
+
+function getHouseForLongitude(longitude: number, houses: import('./types.js').HouseCusp[]): number {
+  const sorted = [...houses].sort((a, b) => a.house - b.house);
+  for (let i = 0; i < sorted.length; i++) {
+    const cusp = sorted[i].longitude;
+    const nextCusp = sorted[(i + 1) % sorted.length].longitude;
+    if (nextCusp > cusp) {
+      if (longitude >= cusp && longitude < nextCusp) return sorted[i].house;
+    } else {
+      // Wraps around 360
+      if (longitude >= cusp || longitude < nextCusp) return sorted[i].house;
+    }
+  }
+  return 1;
 }
 
 function toAspectConfig(p?: EngineFilterParams): AspectConfig | undefined {
@@ -46,30 +90,40 @@ export function calculateNatal(params: {
   birthDate: string; birthTime: string | null;
   lat: number; lon: number;
   utcOffsetMinutes: number; houseSystem: HouseSystem;
+  zodiacSystem?: ZodiacSystem;
 } & EngineFilterParams): NatalChartData {
+  const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
   const jd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
-  const planets = calcPlanets(jd, params.enabledPlanets);
+  const planets = calcPlanets(jd, params.enabledPlanets, zodiac);
   const aspects = detectAspects(planets, 1, toAspectConfig(params));
 
   if (params.birthTime === null) {
     return {
       planets, houses: null, angles: null, aspects,
-      meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, julianDay: jd },
+      meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd },
     };
   }
 
-  const { houses, angles } = calcHouses(jd, params.lat, params.lon, params.houseSystem);
+  const { houses, angles } = calcHouses(jd, params.lat, params.lon, params.houseSystem, zodiac);
   computePartOfFortune(angles, planets);
-  return {
+  const result: NatalChartData = {
     planets, houses, angles, aspects,
-    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, julianDay: jd },
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd },
   };
+  if (params.enabledArabicParts && params.enabledArabicParts.length > 0 && houses) {
+    result.arabicParts = computeArabicParts(angles, planets, houses, params.enabledArabicParts);
+  }
+  if (params.includeFixedStars) {
+    result.fixedStars = calculateFixedStars(jd);
+  }
+  return result;
 }
 
 export function calculateNatalAnalysis(params: {
   birthDate: string; birthTime: string | null;
   lat: number; lon: number;
   utcOffsetMinutes: number; houseSystem: HouseSystem;
+  zodiacSystem?: ZodiacSystem;
 } & EngineFilterParams): NatalChartData & { analysis: ChartAnalysis } {
   const chart = calculateNatal(params);
   const analysis = analyzeChart(chart.planets, chart.houses, chart.angles);
@@ -80,27 +134,29 @@ export function calculateProgressed(params: {
   birthDate: string; birthTime: string | null;
   lat: number; lon: number;
   utcOffsetMinutes: number; houseSystem: HouseSystem;
+  zodiacSystem?: ZodiacSystem;
   progressedDate: string;
   relocatedLat?: number; relocatedLon?: number;
 } & EngineFilterParams): NatalChartData {
+  const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
   const jd = getProgressedJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes, params.progressedDate);
-  const planets = calcPlanets(jd, params.enabledPlanets);
+  const planets = calcPlanets(jd, params.enabledPlanets, zodiac);
   const aspects = detectAspects(planets, 1, toAspectConfig(params));
 
   if (params.birthTime === null) {
     return {
       planets, houses: null, angles: null, aspects,
-      meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, julianDay: jd },
+      meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd },
     };
   }
 
   const houseLat = params.relocatedLat ?? params.lat;
   const houseLon = params.relocatedLon ?? params.lon;
-  const { houses, angles } = calcHouses(jd, houseLat, houseLon, params.houseSystem);
+  const { houses, angles } = calcHouses(jd, houseLat, houseLon, params.houseSystem, zodiac);
   computePartOfFortune(angles, planets);
   return {
     planets, houses, angles, aspects,
-    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, julianDay: jd },
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd },
   };
 }
 
@@ -108,23 +164,25 @@ export function calculateTransit(params: {
   transitDate: string; transitTime: string | null;
   lat: number; lon: number;
   utcOffsetMinutes: number; houseSystem: HouseSystem;
+  zodiacSystem?: ZodiacSystem;
 } & EngineFilterParams): NatalChartData {
+  const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
   const jd = buildJulianDay(params.transitDate, params.transitTime, params.utcOffsetMinutes);
-  const planets = calcPlanets(jd, params.enabledPlanets);
+  const planets = calcPlanets(jd, params.enabledPlanets, zodiac);
   const aspects = detectAspects(planets, 1, toAspectConfig(params));
 
   if (params.transitTime === null) {
     return {
       planets, houses: null, angles: null, aspects,
-      meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, julianDay: jd },
+      meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd },
     };
   }
 
-  const { houses, angles } = calcHouses(jd, params.lat, params.lon, params.houseSystem);
+  const { houses, angles } = calcHouses(jd, params.lat, params.lon, params.houseSystem, zodiac);
   computePartOfFortune(angles, planets);
   return {
     planets, houses, angles, aspects,
-    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, julianDay: jd },
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd },
   };
 }
 
@@ -203,6 +261,7 @@ export function calculateComposite(params: {
     const lat = (pA.latitude + pB.latitude) / 2;
     const speed = (pA.speed + pB.speed) / 2;
     const sign = Math.floor(lon / 30);
+    const declination = (pA.declination + pB.declination) / 2;
     return {
       id: pA.id,
       longitude: lon,
@@ -212,6 +271,7 @@ export function calculateComposite(params: {
       sign,
       signName: SIGN_NAMES[sign],
       degree: lon % 30,
+      declination,
     };
   });
 
@@ -248,6 +308,7 @@ export function calculateComposite(params: {
         schemaVersion: SCHEMA_VERSION,
         calculatedAt: new Date().toISOString(),
         houseSystem: params.personA.houseSystem,
+        zodiacSystem: params.personA.zodiacSystem ?? 'tropical',
         julianDay: midJd,
       },
     };
@@ -259,7 +320,130 @@ export function calculateComposite(params: {
       schemaVersion: SCHEMA_VERSION,
       calculatedAt: new Date().toISOString(),
       houseSystem: params.personA.houseSystem,
+      zodiacSystem: params.personA.zodiacSystem ?? 'tropical',
       julianDay: 0,
+    },
+  };
+}
+
+export function calculateSolarArc(params: {
+  birthDate: string; birthTime: string | null;
+  lat: number; lon: number;
+  utcOffsetMinutes: number; houseSystem: HouseSystem;
+  zodiacSystem?: ZodiacSystem;
+  progressedDate: string;
+} & EngineFilterParams): NatalChartData {
+  const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
+
+  // 1. Calculate the natal chart
+  const natalJd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
+  const natalPlanets = calcPlanets(natalJd, params.enabledPlanets, zodiac);
+  const natalSun = natalPlanets.find(p => p.id === 'SUN');
+  if (!natalSun) throw new Error('Could not calculate natal Sun position');
+
+  // 2. Get the progressed Sun position for the target date
+  const progressedJd = getProgressedJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes, params.progressedDate);
+  const progressedPlanets = calcPlanets(progressedJd, ['SUN'], zodiac);
+  const progressedSun = progressedPlanets.find(p => p.id === 'SUN');
+  if (!progressedSun) throw new Error('Could not calculate progressed Sun position');
+
+  // 3. Apply the solar arc to all natal planets
+  const directedPlanets = calculateSolarArcPositions(natalPlanets, natalSun.longitude, progressedSun.longitude);
+  const aspects = detectAspects(directedPlanets, 1, toAspectConfig(params));
+
+  if (params.birthTime === null) {
+    return {
+      planets: directedPlanets, houses: null, angles: null, aspects,
+      meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: natalJd },
+    };
+  }
+
+  // For houses, use natal houses (solar arc doesn't progress houses)
+  const { houses, angles } = calcHouses(natalJd, params.lat, params.lon, params.houseSystem, zodiac);
+  computePartOfFortune(angles, directedPlanets);
+
+  return {
+    planets: directedPlanets, houses, angles, aspects,
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: natalJd },
+  };
+}
+
+export function calculateSolarReturn(params: {
+  birthDate: string; birthTime: string | null;
+  lat: number; lon: number;
+  utcOffsetMinutes: number;
+  year: number;
+  returnLat: number; returnLon: number;
+  returnUtcOffsetMinutes: number;
+  houseSystem: HouseSystem;
+  zodiacSystem?: ZodiacSystem;
+} & EngineFilterParams): NatalChartData {
+  const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
+  // 1. Get natal Sun longitude (always tropical for finding the return moment)
+  const natalJd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
+  const natalPlanets = calcPlanets(natalJd, ['SUN']);
+  const natalSun = natalPlanets.find(p => p.id === 'SUN');
+  if (!natalSun) throw new Error('Could not calculate natal Sun position');
+
+  // 2. Find the exact JD of the solar return
+  const { year: birthYear, month: birthMonth, day: birthDay } = parseDateString(params.birthDate);
+  const solarReturnJd = findSolarReturnJD(
+    natalSun.longitude, birthYear, birthMonth, birthDay, params.year,
+  );
+
+  // 3. Calculate full chart at that JD using return location
+  const planets = calcPlanets(solarReturnJd, params.enabledPlanets, zodiac);
+  const aspects = detectAspects(planets, 1, toAspectConfig(params));
+  const { houses, angles } = calcHouses(solarReturnJd, params.returnLat, params.returnLon, params.houseSystem, zodiac);
+  computePartOfFortune(angles, planets);
+
+  return {
+    planets, houses, angles, aspects,
+    meta: {
+      schemaVersion: SCHEMA_VERSION,
+      calculatedAt: new Date().toISOString(),
+      houseSystem: params.houseSystem,
+      zodiacSystem: zodiac,
+      julianDay: solarReturnJd,
+    },
+  };
+}
+
+export function calculateLunarReturn(params: {
+  birthDate: string; birthTime: string | null;
+  lat: number; lon: number;
+  utcOffsetMinutes: number;
+  targetDate: string;
+  returnLat: number; returnLon: number;
+  returnUtcOffsetMinutes: number;
+  houseSystem: HouseSystem;
+  zodiacSystem?: ZodiacSystem;
+} & EngineFilterParams): NatalChartData {
+  const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
+  // 1. Get natal Moon longitude (always tropical for finding the return moment)
+  const natalJd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
+  const natalPlanets = calcPlanets(natalJd, ['MOON']);
+  const natalMoon = natalPlanets.find(p => p.id === 'MOON');
+  if (!natalMoon) throw new Error('Could not calculate natal Moon position');
+
+  // 2. Find the exact JD of the lunar return after targetDate
+  const targetJd = buildJulianDay(params.targetDate, null, params.returnUtcOffsetMinutes);
+  const lunarReturnJd = findLunarReturnJD(natalMoon.longitude, targetJd, 1);
+
+  // 3. Calculate full chart at that JD using return location
+  const planets = calcPlanets(lunarReturnJd, params.enabledPlanets, zodiac);
+  const aspects = detectAspects(planets, 1, toAspectConfig(params));
+  const { houses, angles } = calcHouses(lunarReturnJd, params.returnLat, params.returnLon, params.houseSystem, zodiac);
+  computePartOfFortune(angles, planets);
+
+  return {
+    planets, houses, angles, aspects,
+    meta: {
+      schemaVersion: SCHEMA_VERSION,
+      calculatedAt: new Date().toISOString(),
+      houseSystem: params.houseSystem,
+      zodiacSystem: zodiac,
+      julianDay: lunarReturnJd,
     },
   };
 }
