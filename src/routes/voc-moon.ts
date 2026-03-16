@@ -17,7 +17,7 @@ export async function vocMoonRoute(app: FastifyInstance) {
       response: { 200: VocMoonDataSchema },
     },
     handler: async (req) => {
-      const cacheKey = chartCache.generateKey(req.body as Record<string, unknown>);
+      const cacheKey = chartCache.generateKey({ _route: 'ephemeris/voc-moon', ...req.body as Record<string, unknown> });
       return chartCache.getOrSet(cacheKey, () => calculateVocMoon(req.body), chartCache.transitTtlMs);
     },
   });

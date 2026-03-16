@@ -17,7 +17,7 @@ export async function synastryRoute(app: FastifyInstance) {
       response: { 200: SynastryChartDataSchema },
     },
     handler: async (req) => {
-      const cacheKey = chartCache.generateKey(req.body as Record<string, unknown>);
+      const cacheKey = chartCache.generateKey({ _type: 'synastry', ...req.body as Record<string, unknown> });
       return chartCache.getOrSet(cacheKey, () => calculateSynastry(req.body), chartCache.natalTtlMs);
     },
   });

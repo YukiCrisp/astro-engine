@@ -16,7 +16,7 @@ export async function natalAnalysisRoute(app: FastifyInstance) {
       response: { 200: NatalAnalysisResponseSchema },
     },
     handler: async (req) => {
-      const cacheKey = chartCache.generateKey(req.body as Record<string, unknown>);
+      const cacheKey = chartCache.generateKey({ _type: 'natal-analysis', ...req.body as Record<string, unknown> });
       return chartCache.getOrSet(cacheKey, () => calculateNatalAnalysis(req.body), chartCache.natalTtlMs);
     },
   });

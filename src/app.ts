@@ -2,7 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import swagger from '@fastify/swagger';
 import swaggerUI from '@fastify/swagger-ui';
-import { serializerCompiler, validatorCompiler, jsonSchemaTransform } from 'fastify-type-provider-zod';
+import { serializerCompiler, validatorCompiler, jsonSchemaTransform, isResponseSerializationError } from 'fastify-type-provider-zod';
 import { ZodError } from 'zod';
 import { chartCache } from './engine/cache.js';
 import { healthRoute } from './routes/health.js';
@@ -65,7 +65,11 @@ export async function buildApp() {
         error: { code: 'CALCULATION_ERROR', message: err.message },
       });
     }
-    app.log.error(err);
+    if (isResponseSerializationError(err)) {
+      app.log.error({ cause: (err as { cause?: unknown }).cause }, 'Response serialization failed');
+    } else {
+      app.log.error(err);
+    }
     return reply.status(500).send({
       error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred' },
     });

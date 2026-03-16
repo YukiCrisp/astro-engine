@@ -17,7 +17,7 @@ export async function ephemerisRoute(app: FastifyInstance) {
       response: { 200: EphemerisDataSchema },
     },
     handler: async (req) => {
-      const cacheKey = chartCache.generateKey(req.body as Record<string, unknown>);
+      const cacheKey = chartCache.generateKey({ _route: 'ephemeris/monthly', ...req.body as Record<string, unknown> });
       return chartCache.getOrSet(cacheKey, () => calculateEphemeris(req.body), chartCache.transitTtlMs);
     },
   });

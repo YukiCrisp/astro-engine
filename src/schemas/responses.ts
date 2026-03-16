@@ -27,6 +27,7 @@ const PlanetPositionSchema = z.object({
   sign: z.number().int().min(0).max(11),
   signName: z.enum(['ARI', 'TAU', 'GEM', 'CAN', 'LEO', 'VIR', 'LIB', 'SCO', 'SAG', 'CAP', 'AQU', 'PIS']),
   degree: z.number(),
+  declination: z.number(),
 });
 
 const HouseCuspSchema = z.object({

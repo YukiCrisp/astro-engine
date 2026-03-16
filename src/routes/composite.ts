@@ -17,7 +17,7 @@ export async function compositeRoute(app: FastifyInstance) {
       response: { 200: NatalChartDataSchema },
     },
     handler: async (req) => {
-      const cacheKey = chartCache.generateKey(req.body as Record<string, unknown>);
+      const cacheKey = chartCache.generateKey({ _type: 'composite', ...req.body as Record<string, unknown> });
       return chartCache.getOrSet(cacheKey, () => calculateComposite(req.body), chartCache.natalTtlMs);
     },
   });
