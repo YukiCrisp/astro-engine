@@ -4,3 +4,6 @@ ephe/
 .env
 APP_PLAN.md
 
+
+# macOS
+.DS_Store
