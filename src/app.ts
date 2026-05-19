@@ -17,7 +17,7 @@ import { vocMoonRoute } from './routes/voc-moon.js';
 import { natalAnalysisRoute } from './routes/natal-analysis.js';
 import { solarReturnRoute } from './routes/solar-return.js';
 import { solarArcRoute } from './routes/solar-arc.js';
-import { lunarReturnRoute } from './routes/lunar-return.js';
+import { lunarReturnRoute, lunarReturnListRoute } from './routes/lunar-return.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
@@ -88,6 +88,7 @@ export async function buildApp() {
   await app.register(solarReturnRoute);
   await app.register(solarArcRoute);
   await app.register(lunarReturnRoute);
+  await app.register(lunarReturnListRoute);
 
   app.get('/v1/cache/stats', async () => chartCache.stats());
   app.post('/v1/cache/clear', async () => {

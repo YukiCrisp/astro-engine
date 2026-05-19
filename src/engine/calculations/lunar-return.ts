@@ -1,5 +1,5 @@
 import { calcSinglePlanet } from '../sweph-adapter.js';
-import { buildJulianDay } from '../../utils/date.js';
+import { toJulianDay, fromJulianDay } from '../../utils/date.js';
 
 /**
  * Find the Julian Day when the transiting Moon returns to the natal Moon longitude.
@@ -52,7 +52,11 @@ export function findLunarReturnJD(
     let prev = evaluate(searchStartJD);
     for (let jd = searchStartJD + SCAN_STEP; jd <= hi; jd += SCAN_STEP) {
       const curr = evaluate(jd);
-      if (prev * curr < 0) {
+      // Bracket only the true conjunction. lonDiff is normalized to [-180,180),
+      // so it ALSO flips sign at the opposition (≈+179 → ≈-180). That flip has a
+      // huge combined magnitude (~359°); the real return crossing is tiny
+      // (~13°/0.5d). The magnitude guard excludes the opposition false-positive.
+      if (prev * curr < 0 && Math.abs(prev) + Math.abs(curr) < 90) {
         bracketLo = jd - SCAN_STEP;
         bracketHi = jd;
         foundBracket = true;
@@ -65,7 +69,7 @@ export function findLunarReturnJD(
     let prev = evaluate(searchStartJD);
     for (let jd = searchStartJD - SCAN_STEP; jd >= lo; jd -= SCAN_STEP) {
       const curr = evaluate(jd);
-      if (prev * curr < 0) {
+      if (prev * curr < 0 && Math.abs(prev) + Math.abs(curr) < 90) {
         bracketLo = jd;
         bracketHi = jd + SCAN_STEP;
         foundBracket = true;
@@ -101,4 +105,39 @@ export function findLunarReturnJD(
 
   // Return best approximation
   return (lo + hi) / 2;
+}
+
+/**
+ * All lunar returns whose LOCAL datetime falls within the given calendar year.
+ * The Moon returns to its natal longitude ~every 27.3 days → ~13 per year.
+ *
+ * @param natalMoonLongitude  Natal Moon longitude in degrees
+ * @param year                Target calendar year (in the return location's local time)
+ * @param returnUtcOffsetMinutes  UTC offset (minutes) at the return location
+ * @returns ascending list of { julianDay (UT), datetime (local wall-clock ISO) }
+ */
+export function listLunarReturnsInYear(
+  natalMoonLongitude: number,
+  year: number,
+  returnUtcOffsetMinutes: number,
+): { julianDay: number; datetime: string }[] {
+  const offsetDays = returnUtcOffsetMinutes / 60 / 24;
+  // Local wall-clock ISO for a UT Julian Day (shift UT → local, then format).
+  const toLocalIso = (jd: number) => fromJulianDay(jd + offsetDays);
+
+  const results: { julianDay: number; datetime: string }[] = [];
+  // Start a few days before Jan 1 (local) so an early-January return is not missed.
+  let startJd = toJulianDay(year, 1, 1, 0) - offsetDays - 3;
+  // Safety bound: at most 14 returns/year + a couple of out-of-range probes.
+  for (let i = 0; i < 17; i++) {
+    const jd = findLunarReturnJD(natalMoonLongitude, startJd, 1);
+    const iso = toLocalIso(jd);
+    const y = Number(iso.slice(0, 4));
+    if (y > year) break;
+    if (y === year) results.push({ julianDay: jd, datetime: iso });
+    // Advance ~1 day past this return; the next conjunction is ~26 days later,
+    // so the next search reliably lands on the following cycle.
+    startJd = jd + 1;
+  }
+  return results;
 }

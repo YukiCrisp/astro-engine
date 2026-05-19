@@ -4,7 +4,7 @@ import type { AspectConfig } from './calculations/aspects.js';
 import { getProgressedJulianDay } from './calculations/progressions.js';
 import { calculateSolarArcPositions } from './calculations/solar-arc.js';
 import { findSolarReturnJD } from './calculations/solar-return.js';
-import { findLunarReturnJD } from './calculations/lunar-return.js';
+import { findLunarReturnJD, listLunarReturnsInYear } from './calculations/lunar-return.js';
 import { midpointLongitude } from './calculations/composite.js';
 import { calculateVocPeriods } from './calculations/voc-moon.js';
 import { analyzeChart } from './calculations/chart-analysis.js';
@@ -414,6 +414,7 @@ export function calculateLunarReturn(params: {
   lat: number; lon: number;
   utcOffsetMinutes: number;
   targetDate: string;
+  returnJd?: number;
   returnLat: number; returnLon: number;
   returnUtcOffsetMinutes: number;
   houseSystem: HouseSystem;
@@ -426,9 +427,13 @@ export function calculateLunarReturn(params: {
   const natalMoon = natalPlanets.find(p => p.id === 'MOON');
   if (!natalMoon) throw new Error('Could not calculate natal Moon position');
 
-  // 2. Find the exact JD of the lunar return after targetDate
-  const targetJd = buildJulianDay(params.targetDate, null, params.returnUtcOffsetMinutes);
-  const lunarReturnJd = findLunarReturnJD(natalMoon.longitude, targetJd, 1);
+  // 2. Use the explicit return JD when provided (selecting a listed return);
+  //    otherwise solve for the next return after targetDate.
+  const lunarReturnJd = params.returnJd ?? findLunarReturnJD(
+    natalMoon.longitude,
+    buildJulianDay(params.targetDate, null, params.returnUtcOffsetMinutes),
+    1,
+  );
 
   // 3. Calculate full chart at that JD using return location
   const planets = calcPlanets(lunarReturnJd, params.enabledPlanets, zodiac);
@@ -445,6 +450,23 @@ export function calculateLunarReturn(params: {
       zodiacSystem: zodiac,
       julianDay: lunarReturnJd,
     },
+  };
+}
+
+export function listLunarReturns(params: {
+  birthDate: string; birthTime: string | null;
+  utcOffsetMinutes: number;
+  year: number;
+  returnUtcOffsetMinutes: number;
+}): { returns: { julianDay: number; datetime: string }[] } {
+  const natalJd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
+  const natalPlanets = calcPlanets(natalJd, ['MOON']);
+  const natalMoon = natalPlanets.find(p => p.id === 'MOON');
+  if (!natalMoon) throw new Error('Could not calculate natal Moon position');
+  return {
+    returns: listLunarReturnsInYear(
+      natalMoon.longitude, params.year, params.returnUtcOffsetMinutes,
+    ),
   };
 }
 
