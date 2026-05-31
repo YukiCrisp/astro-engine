@@ -104,15 +104,30 @@ describe('computeAstromapLines', () => {
     expect(diff).toBeCloseTo(180, 6);
   });
 
-  it('AC lines for the Sun have points across the latitude range, capped at the polar limit', () => {
+  it('AC line traces the full horizon circle within valid coordinate bounds', () => {
     const lines = computeAstromapLines(jd, ['SUN']);
     const ac = lines.find((l) => l.lineType === 'AC')!;
     expect(ac.points.length).toBeGreaterThan(10);
     for (const p of ac.points) {
-      // POLAR_LIMIT in the calc module is ±83°.
-      expect(Math.abs(p.lat)).toBeLessThanOrEqual(83);
+      // The horizon circle reaches its apex at lat = 90 − |declination|.
+      expect(Math.abs(p.lat)).toBeLessThanOrEqual(90);
       expect(p.lon).toBeGreaterThanOrEqual(-180);
       expect(p.lon).toBeLessThan(180);
+    }
+  });
+
+  it('AC and DC meet at the horizon-circle apexes (shared endpoints)', () => {
+    const lines = computeAstromapLines(jd, ['SUN']);
+    const ac = lines.find((l) => l.lineType === 'AC')!;
+    const dc = lines.find((l) => l.lineType === 'DC')!;
+    const acEnds = [ac.points[0], ac.points[ac.points.length - 1]];
+    const dcEnds = [dc.points[0], dc.points[dc.points.length - 1]];
+    // Each AC endpoint coincides with a DC endpoint (the two apexes).
+    for (const a of acEnds) {
+      const matched = dcEnds.some(
+        (d) => Math.abs(a.lat - d.lat) < 1e-6 && Math.abs(angularDiff(a.lon, d.lon)) < 1e-6,
+      );
+      expect(matched).toBe(true);
     }
   });
 

@@ -29,23 +29,15 @@ const ASTROMAP_PLANETS_SET: Set<PlanetId> = new Set(ASTROMAP_PLANETS);
 const OBLIQUITY_DEG = 23.4393;
 const OBLIQUITY_RAD = (OBLIQUITY_DEG * Math.PI) / 180;
 
+const DEG = Math.PI / 180;
+const RAD = 180 / Math.PI;
+
 /** MC/IC line: emit one point every 5° of latitude from -85° to +85°. */
 const MC_IC_LAT_STEP = 5;
 const MC_IC_LAT_MAX = 85;
 
-/**
- * AC/DC line: scan terrestrial longitude every 1°, latitude every 6° within ±83°.
- * Beyond ~83° tan(lat) explodes; Placidus fails above ±66.5° but Whole Sign
- * (used below) returns the underlying ASC value at any latitude where it's
- * mathematically defined.
- */
-const AC_DC_LON_STEP = 1;
-const AC_DC_LAT_STEP = 6;
-const AC_DC_LAT_LIMIT = 83;
-
-/** Bisection tolerance (degrees) and iteration cap. */
-const BISECT_TOL = 0.01;
-const BISECT_MAX_ITER = 30;
+/** Horizon circle (AC/DC): sample one point every 2° around the circle. */
+const HORIZON_STEP_DEG = 2;
 
 /** Wrap terrestrial longitude into [-180, 180). */
 export function normalizeLon(x: number): number {
@@ -79,26 +71,21 @@ export function gmstDeg(jdUt: number): number {
  * ecliptic longitude and latitude (degrees).
  */
 function eclipticToRA(eclLonDeg: number, eclLatDeg: number): number {
-  const lonRad = (eclLonDeg * Math.PI) / 180;
-  const latRad = (eclLatDeg * Math.PI) / 180;
+  const lonRad = eclLonDeg * DEG;
+  const latRad = eclLatDeg * DEG;
   const sinRA = Math.sin(lonRad) * Math.cos(OBLIQUITY_RAD) - Math.tan(latRad) * Math.sin(OBLIQUITY_RAD);
   const cosRA = Math.cos(lonRad);
-  const raDeg = (Math.atan2(sinRA, cosRA) * 180) / Math.PI;
+  const raDeg = Math.atan2(sinRA, cosRA) * RAD;
   return ((raDeg % 360) + 360) % 360;
 }
 
 /**
  * MC/IC lines for one planet at the given moment.
- * Closed form: planet is on the MC at the terrestrial longitude where local
- * sidereal time equals its right ascension.
+ * Closed form: the planet is on the MC at the terrestrial longitude where local
+ * sidereal time equals its right ascension. These are constant-longitude lines.
  */
-function mcLinesForPlanet(jdUt: number, planetEclLon: number, planetEclLat: number): {
-  mc: AstromapPoint[];
-  ic: AstromapPoint[];
-} {
-  const ra = eclipticToRA(planetEclLon, planetEclLat);
-  const gmst = gmstDeg(jdUt);
-  const lonMc = normalizeLon(ra - gmst);
+function mcLines(jdUt: number, ra: number): { mc: AstromapPoint[]; ic: AstromapPoint[] } {
+  const lonMc = normalizeLon(ra - gmstDeg(jdUt));
   const lonIc = normalizeLon(lonMc + 180);
   const mc: AstromapPoint[] = [];
   const ic: AstromapPoint[] = [];
@@ -109,154 +96,98 @@ function mcLinesForPlanet(jdUt: number, planetEclLon: number, planetEclLat: numb
   return { mc, ic };
 }
 
-/**
- * Build the lat→asc sample table for one terrestrial longitude.
- * Returns the latitude scan and the corresponding asc values (degrees).
- * Skips any lat at which calcHouses fails (extreme polar input).
- */
-function ascScanAtLon(jdUt: number, terrestrialLon: number): { lat: number; asc: number }[] {
-  const samples: { lat: number; asc: number }[] = [];
-  for (let lat = -AC_DC_LAT_LIMIT; lat <= AC_DC_LAT_LIMIT; lat += AC_DC_LAT_STEP) {
-    try {
-      const { angles } = calcHouses(jdUt, lat, terrestrialLon, 'WHOLE_SIGN');
-      // sweph silently returns NaN at extreme polar latitudes for some systems —
-      // skip those so the bisection never brackets across a bad sample.
-      if (Number.isFinite(angles.asc)) samples.push({ lat, asc: angles.asc });
-    } catch {
-      // Hard failure → drop this sample; the line just won't pass here.
-    }
-  }
-  return samples;
+interface CirclePoint extends AstromapPoint {
+  theta: number;
 }
 
 /**
- * Bisect `f(lat) = angularDiff(asc(lat), target)` between two latitude bracket
- * endpoints with known opposite-sign f values. Returns the latitude at which
- * |f| ≤ BISECT_TOL, or null if the iteration failed to converge.
+ * The set of places where a body sits exactly on the horizon (altitude 0°) is a
+ * great circle 90° from the body's geographic sub-point — the point on Earth
+ * with the body at the zenith. We trace that circle directly rather than
+ * root-finding the ascendant per longitude: it stays continuous over the whole
+ * latitude range (no polar truncation) and the points come out in true path
+ * order, so the rising (AC) and setting (DC) halves join cleanly at the apexes.
+ *
+ * Sub-point: latitude = declination, longitude(east) = RA − GMST.
+ * Circle point at azimuth θ around the sub-point (angular radius 90°):
+ *   lat = asin(cos φ0 · cos θ)
+ *   lon = λ0 + atan2(sin θ · cos φ0, −sin φ0 · sin lat)
  */
-function bisectForTarget(
-  jdUt: number,
-  terrestrialLon: number,
-  target: number,
-  latLow: number,
-  latHigh: number,
-  fLow: number,
-): number | null {
-  let lo = latLow;
-  let hi = latHigh;
-  let fLo = fLow;
-  for (let i = 0; i < BISECT_MAX_ITER; i++) {
-    const mid = (lo + hi) / 2;
-    let asc: number;
-    try {
-      asc = calcHouses(jdUt, mid, terrestrialLon, 'PLACIDUS').angles.asc;
-    } catch {
-      return null;
-    }
-    const fMid = angularDiff(asc, target);
-    if (Math.abs(fMid) < BISECT_TOL) return mid;
-    if (fLo * fMid < 0) {
-      hi = mid;
-    } else {
-      lo = mid;
-      fLo = fMid;
-    }
-    if (hi - lo < BISECT_TOL) return mid;
+function horizonCircle(decDeg: number, subLonEastDeg: number): CirclePoint[] {
+  const phi0 = decDeg * DEG;
+  const sinPhi0 = Math.sin(phi0);
+  const cosPhi0 = Math.cos(phi0);
+  const pts: CirclePoint[] = [];
+  for (let theta = 0; theta <= 360; theta += HORIZON_STEP_DEG) {
+    const thr = theta * DEG;
+    const latRad = Math.asin(Math.max(-1, Math.min(1, cosPhi0 * Math.cos(thr))));
+    const dLon = Math.atan2(Math.sin(thr) * cosPhi0, -sinPhi0 * Math.sin(latRad)) * RAD;
+    pts.push({ theta, lat: latRad * RAD, lon: normalizeLon(subLonEastDeg + dLon) });
   }
-  return (lo + hi) / 2;
+  return pts;
+}
+
+/**
+ * Split the traced horizon circle into its rising (AC) and setting (DC) halves.
+ * The two apexes — the circle's latitude extremes — sit at θ = 0 and θ = 180,
+ * where the body is due north/south (neither rising nor setting). Each half runs
+ * apex-to-apex and they share both apex points, so AC and DC meet exactly there.
+ * We label the halves by sampling the ascendant at one interior point.
+ */
+function horizonHalves(
+  jdUt: number,
+  circle: CirclePoint[],
+  planetEclLon: number,
+): { ac: AstromapPoint[]; dc: AstromapPoint[] } {
+  const semiA = circle.filter((p) => p.theta >= 0 && p.theta <= 180).map(toPoint);
+  const semiB = circle.filter((p) => p.theta >= 180).map(toPoint);
+
+  // Label by the ascendant at θ = 90 (an interior point of semiA).
+  const mid = circle.find((p) => p.theta === 90) ?? circle[Math.floor(circle.length / 4)];
+  let aIsAscendant = true;
+  try {
+    const asc = calcHouses(jdUt, mid.lat, mid.lon, 'WHOLE_SIGN').angles.asc;
+    aIsAscendant = Math.abs(angularDiff(asc, planetEclLon)) < 90;
+  } catch {
+    // Fall back to the analytic default if the probe point is degenerate.
+  }
+
+  return aIsAscendant ? { ac: semiA, dc: semiB } : { ac: semiB, dc: semiA };
+}
+
+function toPoint(p: CirclePoint): AstromapPoint {
+  return { lon: p.lon, lat: p.lat };
 }
 
 /**
  * Compute astrocartography lines (MC/IC/AC/DC) for the given planets at the
  * given moment (JD_UT). Returns one AstromapLine per (planet, lineType) pair.
  *
- * Performance note: ASC depends only on (jd, lat, lon), not on which planet
- * we're tracking. The implementation samples ASC once per (lat, lon) and
- * compares to all enabled planets' ecliptic longitudes — cutting sweph calls
- * from ~108k to ~10.8k versus a naive per-planet loop.
+ * MC/IC are closed-form constant-longitude lines. AC/DC are the rising/setting
+ * halves of the body's horizon great circle, traced parametrically.
  */
 export function computeAstromapLines(jdUt: number, planetIds: PlanetId[]): AstromapLine[] {
   const planets = planetIds.filter((id) => ASTROMAP_PLANETS_SET.has(id));
   if (planets.length === 0) return [];
 
-  // Fetch each planet's ecliptic position once.
-  const planetPositions = planets.map((id) => {
-    const p = calcSinglePlanet(jdUt, id);
-    return { id, eclLon: p.longitude, eclLat: p.latitude };
-  });
-
-  // MC/IC: closed form per planet.
-  const mcPoints: Map<PlanetId, AstromapPoint[]> = new Map();
-  const icPoints: Map<PlanetId, AstromapPoint[]> = new Map();
-  for (const p of planetPositions) {
-    const { mc, ic } = mcLinesForPlanet(jdUt, p.eclLon, p.eclLat);
-    mcPoints.set(p.id, mc);
-    icPoints.set(p.id, ic);
-  }
-
-  // AC/DC: scan longitude, sample asc once per (lat, lon), bisect per planet.
-  const acPoints: Map<PlanetId, AstromapPoint[]> = new Map(planets.map((id) => [id, []]));
-  const dcPoints: Map<PlanetId, AstromapPoint[]> = new Map(planets.map((id) => [id, []]));
-
-  for (let lon = -180; lon < 180; lon += AC_DC_LON_STEP) {
-    const samples = ascScanAtLon(jdUt, lon);
-    if (samples.length < 2) continue;
-
-    for (const p of planetPositions) {
-      const targetAC = p.eclLon;
-      const targetDC = (p.eclLon + 180) % 360;
-
-      // Per (planet, lon), keep at most one AC and one DC root — the one
-      // closest to the equator. Above ~70° the ASC equation can be multi-
-      // valued (the formula has discontinuities at the poles), so the
-      // bisection finds several "real" crossings. The lowest-|lat| root is
-      // almost always the physically meaningful one; the others trace the
-      // polar artefacts that previously caused vertical zigzags.
-      let acBest: number | null = null;
-      let dcBest: number | null = null;
-
-      for (let i = 0; i < samples.length - 1; i++) {
-        const s0 = samples[i];
-        const s1 = samples[i + 1];
-
-        // Skip brackets where asc(lat) itself jumped between samples — near
-        // the poles the ASC formula has discontinuities (tan(lat) → ∞)
-        // that would produce fake sign-changes the bisection can't resolve.
-        if (Math.abs(angularDiff(s0.asc, s1.asc)) > 60) continue;
-
-        // A real root exists where f = angularDiff(asc, target) crosses zero
-        // smoothly. The wraparound at asc = target ± 180 creates a fake sign
-        // flip; reject brackets where |f0 - f1| > 180 (the wrap, not a root).
-        const fAC0 = angularDiff(s0.asc, targetAC);
-        const fAC1 = angularDiff(s1.asc, targetAC);
-        if (fAC0 * fAC1 < 0 && Math.abs(fAC0 - fAC1) < 180) {
-          const latRoot = bisectForTarget(jdUt, lon, targetAC, s0.lat, s1.lat, fAC0);
-          if (latRoot !== null && (acBest === null || Math.abs(latRoot) < Math.abs(acBest))) {
-            acBest = latRoot;
-          }
-        }
-
-        const fDC0 = angularDiff(s0.asc, targetDC);
-        const fDC1 = angularDiff(s1.asc, targetDC);
-        if (fDC0 * fDC1 < 0 && Math.abs(fDC0 - fDC1) < 180) {
-          const latRoot = bisectForTarget(jdUt, lon, targetDC, s0.lat, s1.lat, fDC0);
-          if (latRoot !== null && (dcBest === null || Math.abs(latRoot) < Math.abs(dcBest))) {
-            dcBest = latRoot;
-          }
-        }
-      }
-
-      if (acBest !== null) acPoints.get(p.id)!.push({ lon, lat: acBest });
-      if (dcBest !== null) dcPoints.get(p.id)!.push({ lon, lat: dcBest });
-    }
-  }
-
+  const gmst = gmstDeg(jdUt);
   const lines: AstromapLine[] = [];
+
   for (const id of planets) {
-    lines.push({ planetId: id, lineType: 'MC', points: mcPoints.get(id) ?? [] });
-    lines.push({ planetId: id, lineType: 'IC', points: icPoints.get(id) ?? [] });
-    lines.push({ planetId: id, lineType: 'AC', points: acPoints.get(id) ?? [] });
-    lines.push({ planetId: id, lineType: 'DC', points: dcPoints.get(id) ?? [] });
+    const p = calcSinglePlanet(jdUt, id);
+    const ra = eclipticToRA(p.longitude, p.latitude);
+
+    const { mc, ic } = mcLines(jdUt, ra);
+
+    const subLonEast = normalizeLon(ra - gmst);
+    const circle = horizonCircle(p.declination, subLonEast);
+    const { ac, dc } = horizonHalves(jdUt, circle, p.longitude);
+
+    lines.push({ planetId: id, lineType: 'MC', points: mc });
+    lines.push({ planetId: id, lineType: 'IC', points: ic });
+    lines.push({ planetId: id, lineType: 'AC', points: ac });
+    lines.push({ planetId: id, lineType: 'DC', points: dc });
   }
+
   return lines;
 }
