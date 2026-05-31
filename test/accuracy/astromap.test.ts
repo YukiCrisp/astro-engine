@@ -75,7 +75,7 @@ describe('Astromap AC line — round-trip via calcHouses', () => {
     ];
     for (const idx of sampleIndices) {
       const { lon, lat } = ac.points[idx];
-      const { angles } = calcHouses(jd, lat, lon, 'PLACIDUS');
+      const { angles } = calcHouses(jd, lat, lon, 'WHOLE_SIGN');
       // Bisection tolerance is 0.01°; calcHouses round-trip stays within ~0.1°.
       expect(Math.abs(angularDiff(angles.asc, sun.longitude))).toBeLessThan(0.5);
     }
@@ -94,7 +94,7 @@ describe('Astromap AC line — round-trip via calcHouses', () => {
     ];
     for (const idx of sampleIndices) {
       const { lon, lat } = dc.points[idx];
-      const { angles } = calcHouses(jd, lat, lon, 'PLACIDUS');
+      const { angles } = calcHouses(jd, lat, lon, 'WHOLE_SIGN');
       const dsc = (angles.asc + 180) % 360;
       expect(Math.abs(angularDiff(dsc, sun.longitude))).toBeLessThan(0.5);
     }

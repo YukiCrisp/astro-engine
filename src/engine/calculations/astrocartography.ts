@@ -33,10 +33,15 @@ const OBLIQUITY_RAD = (OBLIQUITY_DEG * Math.PI) / 180;
 const MC_IC_LAT_STEP = 5;
 const MC_IC_LAT_MAX = 85;
 
-/** AC/DC line: scan terrestrial longitude every 1°, latitude every 6° within ±66°. */
+/**
+ * AC/DC line: scan terrestrial longitude every 1°, latitude every 6° within ±83°.
+ * Beyond ~83° tan(lat) explodes; Placidus fails above ±66.5° but Whole Sign
+ * (used below) returns the underlying ASC value at any latitude where it's
+ * mathematically defined.
+ */
 const AC_DC_LON_STEP = 1;
 const AC_DC_LAT_STEP = 6;
-const AC_DC_LAT_LIMIT = 66; // Placidus / canonical ACG cut-off, just inside ±66.5°.
+const AC_DC_LAT_LIMIT = 83;
 
 /** Bisection tolerance (degrees) and iteration cap. */
 const BISECT_TOL = 0.01;
@@ -113,10 +118,12 @@ function ascScanAtLon(jdUt: number, terrestrialLon: number): { lat: number; asc:
   const samples: { lat: number; asc: number }[] = [];
   for (let lat = -AC_DC_LAT_LIMIT; lat <= AC_DC_LAT_LIMIT; lat += AC_DC_LAT_STEP) {
     try {
-      const { angles } = calcHouses(jdUt, lat, terrestrialLon, 'PLACIDUS');
-      samples.push({ lat, asc: angles.asc });
+      const { angles } = calcHouses(jdUt, lat, terrestrialLon, 'WHOLE_SIGN');
+      // sweph silently returns NaN at extreme polar latitudes for some systems —
+      // skip those so the bisection never brackets across a bad sample.
+      if (Number.isFinite(angles.asc)) samples.push({ lat, asc: angles.asc });
     } catch {
-      // Polar singularity → drop this sample; the line just won't pass here.
+      // Hard failure → drop this sample; the line just won't pass here.
     }
   }
   return samples;
@@ -202,6 +209,13 @@ export function computeAstromapLines(jdUt: number, planetIds: PlanetId[]): Astro
       for (let i = 0; i < samples.length - 1; i++) {
         const s0 = samples[i];
         const s1 = samples[i + 1];
+
+        // Skip brackets where asc(lat) itself jumped between samples.
+        // Near the poles the ASC formula has discontinuities (tan(lat) → ∞),
+        // which would produce fake sign-changes the bisection can't resolve.
+        // A 6° lat step shouldn't move asc by more than ~60° in the smooth
+        // region; reject anything bigger.
+        if (Math.abs(angularDiff(s0.asc, s1.asc)) > 60) continue;
 
         // A real root exists where f = angularDiff(asc, target) crosses zero
         // smoothly. The wraparound at asc = target ± 180 creates a fake sign

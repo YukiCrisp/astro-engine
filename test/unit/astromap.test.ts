@@ -104,12 +104,13 @@ describe('computeAstromapLines', () => {
     expect(diff).toBeCloseTo(180, 6);
   });
 
-  it('AC lines for the Sun have at least a few points at moderate latitudes', () => {
+  it('AC lines for the Sun have points across the latitude range, capped at the polar limit', () => {
     const lines = computeAstromapLines(jd, ['SUN']);
     const ac = lines.find((l) => l.lineType === 'AC')!;
     expect(ac.points.length).toBeGreaterThan(10);
     for (const p of ac.points) {
-      expect(Math.abs(p.lat)).toBeLessThanOrEqual(67);
+      // POLAR_LIMIT in the calc module is ±83°.
+      expect(Math.abs(p.lat)).toBeLessThanOrEqual(83);
       expect(p.lon).toBeGreaterThanOrEqual(-180);
       expect(p.lon).toBeLessThan(180);
     }
