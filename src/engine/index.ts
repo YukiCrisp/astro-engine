@@ -206,9 +206,11 @@ export function calculateTriple(params: {
   return {
     natal, progressed, transit,
     crossAspects: params.computeCrossAspects ? {
-      natalToProgressed: detectCrossAspects(natal.planets, progressed.planets, aspectConfig),
-      natalToTransit: detectCrossAspects(natal.planets, transit.planets, aspectConfig),
-      progressedToTransit: detectCrossAspects(progressed.planets, transit.planets, aspectConfig),
+      // Triple-chart cross aspects involve at least one moving side
+      // (progressed/transit), so applying is meaningful.
+      natalToProgressed: detectCrossAspects(natal.planets, progressed.planets, aspectConfig, true),
+      natalToTransit: detectCrossAspects(natal.planets, transit.planets, aspectConfig, true),
+      progressedToTransit: detectCrossAspects(progressed.planets, transit.planets, aspectConfig, true),
     } : { natalToProgressed: [], natalToTransit: [], progressedToTransit: [] },
     meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString() },
   };
@@ -275,7 +277,9 @@ export function calculateComposite(params: {
     };
   });
 
-  const aspects = detectAspects(planets, 1, toAspectConfig(filterParams));
+  // Composite is a synthetic midpoint chart with no time evolution —
+  // applying has no meaning here.
+  const aspects = detectAspects(planets, 1, toAspectConfig(filterParams), false);
 
   if (chartA.angles && chartB.angles && params.personA.birthTime !== null && params.personB.birthTime !== null) {
     const compositeAsc = midpointLongitude(chartA.angles.asc, chartB.angles.asc);

@@ -46,6 +46,7 @@ export function detectAspects(
   planets: PlanetPosition[],
   orbMultiplier: number = 1,
   config?: AspectConfig,
+  computeApplying: boolean = true,
 ): Aspect[] {
   const angles = config?.enabledAspects
     ? ASPECT_ANGLES.filter(([type]) => config.enabledAspects!.includes(type))
@@ -60,7 +61,7 @@ export function detectAspects(
         const maxOrb = getOrb(type, a.id, b.id, config?.orbOverrides, config?.sunOrbBonus, config?.moonOrbBonus) * orbMultiplier;
         const orb = Math.abs(dist - angle);
         if (orb <= maxOrb) {
-          const applying = a.speed > b.speed;
+          const applying = computeApplying ? a.speed > b.speed : undefined;
           aspects.push({ planetA: a.id, planetB: b.id, type, angle, orb, applying });
           break;
         }
@@ -70,10 +71,20 @@ export function detectAspects(
   return aspects;
 }
 
+/**
+ * Cross-chart aspects (between two sets of planet positions).
+ *
+ * `computeApplying` should only be true when one side is a transit / progression
+ * with meaningful motion (e.g. triple-chart natal↔transit, natal↔progressed,
+ * progressed↔transit). Synastry (two static natal charts) and composite
+ * (synthesized midpoints) have no time evolution, so applying is left
+ * undefined for those.
+ */
 export function detectCrossAspects(
   planetsA: PlanetPosition[],
   planetsB: PlanetPosition[],
   config?: AspectConfig,
+  computeApplying: boolean = false,
 ): Aspect[] {
   const angles = config?.enabledAspects
     ? ASPECT_ANGLES.filter(([type]) => config.enabledAspects!.includes(type))
@@ -86,7 +97,8 @@ export function detectCrossAspects(
         const maxOrb = getOrb(type, a.id, b.id, config?.orbOverrides, config?.sunOrbBonus, config?.moonOrbBonus);
         const orb = Math.abs(dist - angle);
         if (orb <= maxOrb) {
-          aspects.push({ planetA: a.id, planetB: b.id, type, angle, orb, applying: false });
+          const applying = computeApplying ? a.speed > b.speed : undefined;
+          aspects.push({ planetA: a.id, planetB: b.id, type, angle, orb, applying });
           break;
         }
       }

@@ -52,7 +52,8 @@ export interface Aspect {
   type: AspectType;
   angle: number;
   orb: number;
-  applying: boolean;
+  /** Undefined when the aspect's context has no time evolution (synastry, composite). */
+  applying?: boolean;
 }
 
 export type ArabicPartId = 'PART_OF_FORTUNE' | 'PART_OF_SPIRIT' | 'PART_OF_EROS' | 'PART_OF_MARRIAGE';

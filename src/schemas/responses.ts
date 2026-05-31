@@ -51,7 +51,7 @@ const AspectSchema = z.object({
   type: AspectTypeEnum,
   angle: z.number(),
   orb: z.number(),
-  applying: z.boolean(),
+  applying: z.boolean().optional(),
 });
 
 const ArabicPartResultSchema = z.object({
