@@ -206,15 +206,22 @@ export function computeAstromapLines(jdUt: number, planetIds: PlanetId[]): Astro
       const targetAC = p.eclLon;
       const targetDC = (p.eclLon + 180) % 360;
 
+      // Per (planet, lon), keep at most one AC and one DC root — the one
+      // closest to the equator. Above ~70° the ASC equation can be multi-
+      // valued (the formula has discontinuities at the poles), so the
+      // bisection finds several "real" crossings. The lowest-|lat| root is
+      // almost always the physically meaningful one; the others trace the
+      // polar artefacts that previously caused vertical zigzags.
+      let acBest: number | null = null;
+      let dcBest: number | null = null;
+
       for (let i = 0; i < samples.length - 1; i++) {
         const s0 = samples[i];
         const s1 = samples[i + 1];
 
-        // Skip brackets where asc(lat) itself jumped between samples.
-        // Near the poles the ASC formula has discontinuities (tan(lat) → ∞),
-        // which would produce fake sign-changes the bisection can't resolve.
-        // A 6° lat step shouldn't move asc by more than ~60° in the smooth
-        // region; reject anything bigger.
+        // Skip brackets where asc(lat) itself jumped between samples — near
+        // the poles the ASC formula has discontinuities (tan(lat) → ∞)
+        // that would produce fake sign-changes the bisection can't resolve.
         if (Math.abs(angularDiff(s0.asc, s1.asc)) > 60) continue;
 
         // A real root exists where f = angularDiff(asc, target) crosses zero
@@ -224,16 +231,23 @@ export function computeAstromapLines(jdUt: number, planetIds: PlanetId[]): Astro
         const fAC1 = angularDiff(s1.asc, targetAC);
         if (fAC0 * fAC1 < 0 && Math.abs(fAC0 - fAC1) < 180) {
           const latRoot = bisectForTarget(jdUt, lon, targetAC, s0.lat, s1.lat, fAC0);
-          if (latRoot !== null) acPoints.get(p.id)!.push({ lon, lat: latRoot });
+          if (latRoot !== null && (acBest === null || Math.abs(latRoot) < Math.abs(acBest))) {
+            acBest = latRoot;
+          }
         }
 
         const fDC0 = angularDiff(s0.asc, targetDC);
         const fDC1 = angularDiff(s1.asc, targetDC);
         if (fDC0 * fDC1 < 0 && Math.abs(fDC0 - fDC1) < 180) {
           const latRoot = bisectForTarget(jdUt, lon, targetDC, s0.lat, s1.lat, fDC0);
-          if (latRoot !== null) dcPoints.get(p.id)!.push({ lon, lat: latRoot });
+          if (latRoot !== null && (dcBest === null || Math.abs(latRoot) < Math.abs(dcBest))) {
+            dcBest = latRoot;
+          }
         }
       }
+
+      if (acBest !== null) acPoints.get(p.id)!.push({ lon, lat: acBest });
+      if (dcBest !== null) dcPoints.get(p.id)!.push({ lon, lat: dcBest });
     }
   }
 
