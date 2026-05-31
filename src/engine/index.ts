@@ -12,12 +12,13 @@ import type { ChartAnalysis } from './calculations/chart-analysis.js';
 import { calculateArabicParts } from './calculations/arabic-parts.js';
 import type { ArabicPartId } from './calculations/arabic-parts.js';
 import { calculateFixedStars } from './calculations/fixed-stars.js';
+import { computeAstromapLines, ASTROMAP_PLANETS } from './calculations/astrocartography.js';
 import { buildJulianDay, toJulianDay, parseDateString } from '../utils/date.js';
 import { SCHEMA_VERSION } from './types.js';
 import type {
   NatalChartData, HouseSystem, ZodiacSystem, TripleChartData,
   SynastryChartData, EphemerisData, EphemerisEvent,
-  VocMoonData,
+  VocMoonData, AstromapData,
   PlanetId, PlanetPosition, AspectType, SignName,
 } from './types.js';
 
@@ -606,5 +607,26 @@ export function calculateVocMoon(params: {
     month: params.month,
     periods,
     meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString() },
+  };
+}
+
+export function calculateAstromap(params: {
+  birthDate: string;
+  birthTime: string;
+  utcOffsetMinutes: number;
+  enabledPlanets?: PlanetId[];
+}): AstromapData {
+  const jd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
+  const requested = params.enabledPlanets ?? [...ASTROMAP_PLANETS];
+  const planets = requested.filter((id) => (ASTROMAP_PLANETS as readonly PlanetId[]).includes(id));
+  const lines = computeAstromapLines(jd, planets);
+  return {
+    lines,
+    meta: {
+      schemaVersion: SCHEMA_VERSION,
+      calculatedAt: new Date().toISOString(),
+      julianDay: jd,
+      planetCount: planets.length,
+    },
   };
 }

@@ -153,3 +153,26 @@ export const VocMoonDataSchema = z.object({
     calculatedAt: z.string(),
   }),
 });
+
+export const AstromapLineTypeEnum = z.enum(['MC', 'IC', 'AC', 'DC']);
+
+const AstromapPointSchema = z.object({
+  lon: z.number(),
+  lat: z.number(),
+});
+
+const AstromapLineSchema = z.object({
+  planetId: PlanetIdEnum,
+  lineType: AstromapLineTypeEnum,
+  points: z.array(AstromapPointSchema),
+});
+
+export const AstromapDataSchema = z.object({
+  lines: z.array(AstromapLineSchema),
+  meta: z.object({
+    schemaVersion: z.number(),
+    calculatedAt: z.string(),
+    julianDay: z.number(),
+    planetCount: z.number().int(),
+  }),
+});

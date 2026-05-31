@@ -159,3 +159,26 @@ export interface VocMoonData {
     calculatedAt: string;
   };
 }
+
+export type AstromapLineType = 'MC' | 'IC' | 'AC' | 'DC';
+
+export interface AstromapPoint {
+  lon: number;
+  lat: number;
+}
+
+export interface AstromapLine {
+  planetId: PlanetId;
+  lineType: AstromapLineType;
+  points: AstromapPoint[];
+}
+
+export interface AstromapData {
+  lines: AstromapLine[];
+  meta: {
+    schemaVersion: number;
+    calculatedAt: string;
+    julianDay: number;
+    planetCount: number;
+  };
+}

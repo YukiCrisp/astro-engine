@@ -32,6 +32,7 @@ All endpoints are versioned under `/v1/`:
 | POST | /v1/charts/composite | Composite chart (midpoint method) |
 | POST | /v1/charts/solar-return | Solar return chart for a target year |
 | POST | /v1/charts/lunar-return | Lunar return chart after a target date |
+| POST | /v1/charts/astromap | Astrocartography MC/IC/AC/DC lines for a birth moment |
 | POST | /v1/ephemeris/monthly | Monthly planet positions + events |
 | POST | /v1/ephemeris/voc-moon | Void-of-course Moon periods |
 | GET | /v1/cache/stats | Cache hit/miss/size statistics |
@@ -52,6 +53,7 @@ All endpoints are versioned under `/v1/`:
 | `fixed-stars.ts` | Major fixed star positions at a given Julian Day |
 | `chart-analysis.ts` | Chart pattern analysis (culminating/rising planet, distribution) |
 | `voc-moon.ts` | Void-of-course Moon period detection |
+| `astrocartography.ts` | Astrocartography line computation (MC/IC closed-form, AC/DC via shared-`calcHouses` bisection) |
 
 ## Cache System (`src/engine/cache.ts`)
 
@@ -69,4 +71,9 @@ LRU calculation cache to avoid redundant Swiss Ephemeris calls:
 - **Arabic Parts:** Part of Fortune, Part of Spirit, Part of Eros, Part of Marriage
 - **Fixed Stars:** Major fixed star positions
 - **Declination:** Included in every PlanetPosition; enables OOB detection
+- **Astrocartography:** MC/IC/AC/DC planetary lines for the 10 classical planets (Sun→Pluto)
 - **Filter params:** All chart endpoints accept optional `enabledPlanets`, `enabledAspects`, `aspectOrbs`, `sunOrbBonus`, `moonOrbBonus`, `enabledArabicParts`, `includeFixedStars`
+
+## Versioning
+
+Engine responses include `meta.schemaVersion` (currently `1`). Bump it only on a **breaking** response-shape change (field removed, type narrowed, semantic shift). Additive fields do **not** bump the version — the frontend tolerates unknown keys. Bumping the version makes stale frontends fail loudly via `AstroEngineSchemaMismatchError` on the next request, which is the intended behavior.

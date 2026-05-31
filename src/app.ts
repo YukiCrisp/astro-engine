@@ -18,6 +18,7 @@ import { natalAnalysisRoute } from './routes/natal-analysis.js';
 import { solarReturnRoute } from './routes/solar-return.js';
 import { solarArcRoute } from './routes/solar-arc.js';
 import { lunarReturnRoute, lunarReturnListRoute } from './routes/lunar-return.js';
+import { astromapRoute } from './routes/astromap.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
@@ -89,6 +90,7 @@ export async function buildApp() {
   await app.register(solarArcRoute);
   await app.register(lunarReturnRoute);
   await app.register(lunarReturnListRoute);
+  await app.register(astromapRoute);
 
   app.get('/v1/cache/stats', async () => chartCache.stats());
   app.post('/v1/cache/clear', async () => {
