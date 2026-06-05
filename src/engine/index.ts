@@ -625,8 +625,9 @@ export function calculateAstromap(params: {
     lines,
     parans,
     meta: {
-      // schemaVersion 2 adds the `parans` field to the astromap response.
-      schemaVersion: 2,
+      // `parans` is an additive field — no schema-version bump (the app gates on
+      // an exact SCHEMA_VERSION match shared across every endpoint).
+      schemaVersion: SCHEMA_VERSION,
       calculatedAt: new Date().toISOString(),
       julianDay: jd,
       planetCount: planets.length,

@@ -9,6 +9,8 @@ import {
   ASTROMAP_PLANETS,
 } from '../../src/engine/calculations/astrocartography.js';
 import { buildJulianDay } from '../../src/utils/date.js';
+import { calculateAstromap } from '../../src/engine/index.js';
+import { SCHEMA_VERSION } from '../../src/engine/types.js';
 
 beforeAll(() => {
   initSweph('./ephe');
@@ -170,5 +172,16 @@ describe('computeAstromapParans', () => {
       (p) => `${p.planetA}|${p.lineA}|${p.planetB}|${p.lineB}|${p.lat}|${p.lon}`,
     );
     expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
+describe('calculateAstromap response contract', () => {
+  // Regression guard: `parans` is additive, so the astromap response must keep
+  // the shared SCHEMA_VERSION. Diverging (e.g. a per-endpoint bump) trips the
+  // app adapter's exact-match schema gate and 502s every astromap request.
+  it('reports the shared SCHEMA_VERSION, with parans present', () => {
+    const data = calculateAstromap({ birthDate: '1879-03-14', birthTime: '11:30', utcOffsetMinutes: 54 });
+    expect(data.meta.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(Array.isArray(data.parans)).toBe(true);
   });
 });
