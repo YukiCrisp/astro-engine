@@ -12,7 +12,7 @@ import type { ChartAnalysis } from './calculations/chart-analysis.js';
 import { calculateArabicParts } from './calculations/arabic-parts.js';
 import type { ArabicPartId } from './calculations/arabic-parts.js';
 import { calculateFixedStars } from './calculations/fixed-stars.js';
-import { computeAstromapLines, ASTROMAP_PLANETS } from './calculations/astrocartography.js';
+import { computeAstromapLines, computeAstromapParans, ASTROMAP_PLANETS } from './calculations/astrocartography.js';
 import { buildJulianDay, toJulianDay, parseDateString } from '../utils/date.js';
 import { SCHEMA_VERSION } from './types.js';
 import type {
@@ -620,10 +620,13 @@ export function calculateAstromap(params: {
   const requested = params.enabledPlanets ?? [...ASTROMAP_PLANETS];
   const planets = requested.filter((id) => (ASTROMAP_PLANETS as readonly PlanetId[]).includes(id));
   const lines = computeAstromapLines(jd, planets);
+  const parans = computeAstromapParans(lines);
   return {
     lines,
+    parans,
     meta: {
-      schemaVersion: SCHEMA_VERSION,
+      // schemaVersion 2 adds the `parans` field to the astromap response.
+      schemaVersion: 2,
       calculatedAt: new Date().toISOString(),
       julianDay: jd,
       planetCount: planets.length,

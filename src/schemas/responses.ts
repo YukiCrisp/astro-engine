@@ -167,8 +167,18 @@ const AstromapLineSchema = z.object({
   points: z.array(AstromapPointSchema),
 });
 
+export const ParanCrossingSchema = z.object({
+  planetA: PlanetIdEnum,
+  lineA: AstromapLineTypeEnum,
+  planetB: PlanetIdEnum,
+  lineB: AstromapLineTypeEnum,
+  lat: z.number(),
+  lon: z.number(),
+});
+
 export const AstromapDataSchema = z.object({
   lines: z.array(AstromapLineSchema),
+  parans: z.array(ParanCrossingSchema),
   meta: z.object({
     schemaVersion: z.number(),
     calculatedAt: z.string(),

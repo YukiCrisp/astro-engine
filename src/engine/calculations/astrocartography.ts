@@ -10,6 +10,20 @@ export interface AstromapPoint {
   lat: number; // terrestrial latitude, [-90, 90]
 }
 
+/**
+ * A paran (paranatellonta): the latitude where two different planets are
+ * simultaneously angular — i.e. where two of the planetary map-lines cross.
+ * `planetA` always precedes `planetB` in `ASTROMAP_PLANETS` index order.
+ */
+export interface ParanCrossing {
+  planetA: PlanetId;
+  lineA: AstromapLineType;
+  planetB: PlanetId;
+  lineB: AstromapLineType;
+  lat: number; // paran latitude (the crossing latitude)
+  lon: number; // crossing longitude — representative marker point
+}
+
 /** One astrocartography line for one planet. */
 export interface AstromapLine {
   planetId: PlanetId;
@@ -190,4 +204,136 @@ export function computeAstromapLines(jdUt: number, planetIds: PlanetId[]): Astro
   }
 
   return lines;
+}
+
+/** Inhabited latitude band kept for parans — outside this is mostly noise. */
+const PARAN_LAT_MIN = -66;
+const PARAN_LAT_MAX = 66;
+
+/** Two crossings closer than this in latitude (same line pair) are one paran. */
+const PARAN_DEDUP_LAT = 0.5;
+
+/** Index of a planet within ASTROMAP_PLANETS (for canonical A-before-B ordering). */
+function planetOrder(id: PlanetId): number {
+  return ASTROMAP_PLANETS.indexOf(id);
+}
+
+/**
+ * Intersection of segment (p1→p2) with segment (p3→p4) treated as planar
+ * (lon, lat) coordinates. Returns the crossing point, or null when the segments
+ * are parallel/collinear or do not overlap within their extents.
+ *
+ * Standard parametric form: P = p1 + t·(p2−p1) = p3 + u·(p4−p3), with the
+ * crossing valid only for t, u ∈ [0, 1]. The vertical constant-longitude MC/IC
+ * segments fall out of the general formula with no special-casing.
+ */
+function segmentIntersection(
+  p1: AstromapPoint,
+  p2: AstromapPoint,
+  p3: AstromapPoint,
+  p4: AstromapPoint,
+): AstromapPoint | null {
+  const r1 = p2.lon - p1.lon;
+  const s1 = p2.lat - p1.lat;
+  const r2 = p4.lon - p3.lon;
+  const s2 = p4.lat - p3.lat;
+
+  const denom = r1 * s2 - s1 * r2;
+  if (denom === 0) return null; // parallel or collinear → no single crossing
+
+  const dx = p3.lon - p1.lon;
+  const dy = p3.lat - p1.lat;
+  const t = (dx * s2 - dy * r2) / denom;
+  const u = (dx * s1 - dy * r1) / denom;
+
+  if (t < 0 || t > 1 || u < 0 || u > 1) return null;
+
+  return { lon: p1.lon + t * r1, lat: p1.lat + t * s1 };
+}
+
+/**
+ * Compute parans (paranatellonta) from a set of astrocartography lines.
+ *
+ * A paran is the latitude where two *different* planets are simultaneously
+ * angular, which is exactly where two of their map-lines cross. So this finds
+ * planar (lon, lat) intersections between line polylines of different planets —
+ * no new astronomy, just 2D segment-segment intersection on the existing points.
+ *
+ * Segments that wrap the ±180° antimeridian seam are skipped before testing.
+ * Crossings are kept only inside the inhabited band [−66°, 66°], near-duplicate
+ * crossings for the same (planetA, lineA, planetB, lineB) are collapsed within
+ * ~0.5° of latitude, and planets are normalised so planetA precedes planetB in
+ * ASTROMAP_PLANETS order. Output is sorted deterministically.
+ */
+export function computeAstromapParans(lines: AstromapLine[]): ParanCrossing[] {
+  const crossings: ParanCrossing[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const a = lines[i];
+    for (let j = i + 1; j < lines.length; j++) {
+      const b = lines[j];
+      if (a.planetId === b.planetId) continue; // only different planets cross to a paran
+
+      for (let m = 0; m + 1 < a.points.length; m++) {
+        const a1 = a.points[m];
+        const a2 = a.points[m + 1];
+        // Skip segments that wrap the antimeridian seam.
+        if (Math.abs(normalizeLon(a2.lon - a1.lon)) > 180) continue;
+        if (Math.abs(a2.lon - a1.lon) > 180) continue;
+
+        for (let n = 0; n + 1 < b.points.length; n++) {
+          const b1 = b.points[n];
+          const b2 = b.points[n + 1];
+          if (Math.abs(b2.lon - b1.lon) > 180) continue;
+
+          const hit = segmentIntersection(a1, a2, b1, b2);
+          if (!hit) continue;
+          if (hit.lat < PARAN_LAT_MIN || hit.lat > PARAN_LAT_MAX) continue;
+
+          // Normalise so planetA precedes planetB in ASTROMAP_PLANETS order,
+          // swapping the line labels along with the planets.
+          let planetA = a.planetId;
+          let lineA = a.lineType;
+          let planetB = b.planetId;
+          let lineB = b.lineType;
+          if (planetOrder(planetA) > planetOrder(planetB)) {
+            [planetA, planetB] = [planetB, planetA];
+            [lineA, lineB] = [lineB, lineA];
+          }
+
+          crossings.push({ planetA, lineA, planetB, lineB, lat: hit.lat, lon: hit.lon });
+        }
+      }
+    }
+  }
+
+  // Sort deterministically: planetA index, planetB index, lineA, lineB, lat.
+  crossings.sort((x, y) => {
+    return (
+      planetOrder(x.planetA) - planetOrder(y.planetA) ||
+      planetOrder(x.planetB) - planetOrder(y.planetB) ||
+      x.lineA.localeCompare(y.lineA) ||
+      x.lineB.localeCompare(y.lineB) ||
+      x.lat - y.lat
+    );
+  });
+
+  // Dedup near-duplicate crossings for the same line pair within ~0.5° latitude.
+  const deduped: ParanCrossing[] = [];
+  for (const c of crossings) {
+    const prev = deduped[deduped.length - 1];
+    if (
+      prev &&
+      prev.planetA === c.planetA &&
+      prev.lineA === c.lineA &&
+      prev.planetB === c.planetB &&
+      prev.lineB === c.lineB &&
+      Math.abs(prev.lat - c.lat) <= PARAN_DEDUP_LAT
+    ) {
+      continue;
+    }
+    deduped.push(c);
+  }
+
+  return deduped;
 }

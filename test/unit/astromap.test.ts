@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { initSweph } from '../../src/engine/sweph-adapter.js';
 import {
   computeAstromapLines,
+  computeAstromapParans,
   normalizeLon,
   angularDiff,
   gmstDeg,
@@ -135,5 +136,39 @@ describe('computeAstromapLines', () => {
     expect(ASTROMAP_PLANETS).toHaveLength(10);
     const lines = computeAstromapLines(jd, [...ASTROMAP_PLANETS]);
     expect(lines).toHaveLength(40);
+  });
+});
+
+describe('computeAstromapParans', () => {
+  // Same known reference moment (Einstein's birth) as the lines tests.
+  const jd = buildJulianDay('1879-03-14', '11:30', 54);
+  const lines = computeAstromapLines(jd, [...ASTROMAP_PLANETS]);
+  const parans = computeAstromapParans(lines);
+
+  const planetIndex = (id: string) => ASTROMAP_PLANETS.indexOf(id as never);
+
+  it('returns at least one paran for a full ten-planet chart', () => {
+    expect(parans.length).toBeGreaterThan(0);
+  });
+
+  it('keeps every paran inside the inhabited band [-66, 66]', () => {
+    for (const p of parans) {
+      expect(p.lat).toBeGreaterThanOrEqual(-66);
+      expect(p.lat).toBeLessThanOrEqual(66);
+    }
+  });
+
+  it('always orders planetA before planetB and never crosses the same planet', () => {
+    for (const p of parans) {
+      expect(p.planetA).not.toBe(p.planetB);
+      expect(planetIndex(p.planetA)).toBeLessThan(planetIndex(p.planetB));
+    }
+  });
+
+  it('contains no exact duplicate crossings', () => {
+    const keys = parans.map(
+      (p) => `${p.planetA}|${p.lineA}|${p.planetB}|${p.lineB}|${p.lat}|${p.lon}`,
+    );
+    expect(new Set(keys).size).toBe(keys.length);
   });
 });

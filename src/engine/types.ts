@@ -175,6 +175,7 @@ export interface AstromapLine {
 
 export interface AstromapData {
   lines: AstromapLine[];
+  parans: import('./calculations/astrocartography.js').ParanCrossing[];
   meta: {
     schemaVersion: number;
     calculatedAt: string;
