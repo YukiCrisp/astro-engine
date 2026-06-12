@@ -115,6 +115,19 @@ export interface SynastryChartData {
   };
 }
 
+export interface CompositeTransitChartData {
+  /** Midpoint composite chart of the two persons. */
+  composite: NatalChartData;
+  /** Transiting positions for the requested moment. */
+  transit: NatalChartData;
+  /** Aspects from composite planets to transiting planets (applying meaningful — transit moves). */
+  crossAspects: Aspect[];
+  meta: {
+    schemaVersion: number;
+    calculatedAt: string;
+  };
+}
+
 export interface EphemerisDay {
   date: string;
   planets: PlanetPosition[];
