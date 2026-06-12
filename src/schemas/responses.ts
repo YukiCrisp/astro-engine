@@ -111,6 +111,16 @@ export const SynastryChartDataSchema = z.object({
   }),
 });
 
+export const CompositeTransitChartDataSchema = z.object({
+  composite: NatalChartDataSchema,
+  transit: NatalChartDataSchema,
+  crossAspects: z.array(AspectSchema),
+  meta: z.object({
+    schemaVersion: z.number(),
+    calculatedAt: z.string(),
+  }),
+});
+
 const EphemerisDaySchema = z.object({
   date: z.string(),
   planets: z.array(PlanetPositionSchema),
