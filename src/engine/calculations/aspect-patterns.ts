@@ -1,5 +1,6 @@
-import type { PlanetPosition, PlanetId, Aspect, AspectType } from '../types.js';
+import type { PlanetPosition, PlanetId, Aspect, AspectType, HouseCusp } from '../types.js';
 import type { ElementType, ModalityType } from './chart-analysis.js';
+import { getPlanetHouse } from './houses.js';
 
 /**
  * Special aspect patterns (multi-planet geometric figures) detected from a
@@ -41,6 +42,12 @@ export interface AspectPattern {
   element?: ElementType;
   /** Shared modality (T-square / Grand Cross). */
   modality?: ModalityType;
+  /** Zodiac sign index (0–11) shared by a same-sign stellium. */
+  sign?: number;
+  /** House number (1–12) shared by a same-house stellium. */
+  house?: number;
+  /** Heightened emphasis (e.g. a stellium at/above the strong threshold). */
+  strong?: boolean;
   /** Average orb across the figure's constituent aspects, in degrees. */
   orbAvg: number;
 }
@@ -98,10 +105,17 @@ export class AspectGraph {
   private readonly positions = new Map<PlanetId, PlanetPosition>();
   private readonly edges = new Map<string, Aspect>();
   private readonly adjacency = new Map<PlanetId, Aspect[]>();
+  private readonly houseOf = new Map<PlanetId, number>();
 
   constructor(
     public readonly planets: PlanetPosition[],
     public readonly aspects: Aspect[],
+    /**
+     * Optional planet→house (1–12) assignment. Absent when the chart has no
+     * house cusps (e.g. unknown birth time); house-based detectors then skip
+     * house grouping. Built by `detectAspectPatterns` from the chart's cusps.
+     */
+    houses?: ReadonlyMap<PlanetId, number>,
   ) {
     for (const p of planets) this.positions.set(p.id, p);
     for (const aspect of aspects) {
@@ -109,6 +123,12 @@ export class AspectGraph {
       this.pushAdjacency(aspect.planetA, aspect);
       this.pushAdjacency(aspect.planetB, aspect);
     }
+    if (houses) for (const [id, h] of houses) this.houseOf.set(id, h);
+  }
+
+  /** House (1–12) a planet occupies, or `undefined` when no house data exists. */
+  house(id: PlanetId): number | undefined {
+    return this.houseOf.get(id);
   }
 
   private pushAdjacency(id: PlanetId, aspect: Aspect): void {
@@ -155,6 +175,105 @@ export type AspectPatternDetector = (
   graph: AspectGraph,
   config: AspectPatternConfig,
 ) => AspectPattern[];
+
+/** Add a planet to a grouping map keyed by sign/house index. */
+function pushGroup(groups: Map<number, PlanetPosition[]>, key: number, planet: PlanetPosition): void {
+  const list = groups.get(key);
+  if (list) list.push(planet);
+  else groups.set(key, [planet]);
+}
+
+/** Whether two planet groups contain exactly the same members. */
+function sameMembers(a: PlanetPosition[], b: PlanetPosition[]): boolean {
+  if (a.length !== b.length) return false;
+  const ids = new Set(a.map((p) => p.id));
+  return b.every((p) => ids.has(p.id));
+}
+
+/** Conjunction aspects detected between members of a group, if any. */
+function memberConjunctions(graph: AspectGraph, members: PlanetPosition[]): Aspect[] {
+  const out: Aspect[] = [];
+  for (let i = 0; i < members.length; i++) {
+    for (let j = i + 1; j < members.length; j++) {
+      const edge = graph.between(members[i].id, members[j].id);
+      if (edge?.type === 'CONJUNCTION') out.push(edge);
+    }
+  }
+  return out;
+}
+
+/**
+ * Build a STELLIUM pattern from a member group, tagging the shared sign (with
+ * its element/modality) and/or house. `strong` flags clusters at/above the
+ * configured strong threshold (default 4) for heightened display emphasis.
+ */
+function makeStellium(
+  graph: AspectGraph,
+  config: AspectPatternConfig,
+  members: PlanetPosition[],
+  sign: number | undefined,
+  house: number | undefined,
+): AspectPattern {
+  const ordered = [...members].sort((a, b) => a.longitude - b.longitude);
+  const pattern: AspectPattern = {
+    type: 'STELLIUM',
+    planets: ordered.map((p) => p.id),
+    orbAvg: averageOrb(memberConjunctions(graph, ordered)),
+    strong: ordered.length >= config.stelliumStrongThreshold,
+  };
+  if (sign !== undefined) {
+    pattern.sign = sign;
+    pattern.element = signElement(sign);
+    pattern.modality = signModality(sign);
+  }
+  if (house !== undefined) pattern.house = house;
+  return pattern;
+}
+
+/**
+ * STELLIUM detector (ENGA-246). A stellium is a cluster of `stelliumThreshold`+
+ * planets sharing one zodiac sign or one house. Planets are grouped by sign and
+ * by house; groups meeting the threshold become patterns. When the same planet
+ * set forms both a same-sign and a same-house cluster, the two are merged into a
+ * single pattern carrying both `sign` and `house` rather than emitting a visible
+ * duplicate. House grouping is skipped when the chart has no house data.
+ */
+function detectStelliums(graph: AspectGraph, config: AspectPatternConfig): AspectPattern[] {
+  const threshold = config.stelliumThreshold;
+  const bySign = new Map<number, PlanetPosition[]>();
+  const byHouse = new Map<number, PlanetPosition[]>();
+  for (const planet of graph.planets) {
+    pushGroup(bySign, planet.sign, planet);
+    const house = graph.house(planet.id);
+    if (house !== undefined) pushGroup(byHouse, house, planet);
+  }
+
+  const signGroups = [...bySign.entries()]
+    .filter(([, members]) => members.length >= threshold)
+    .sort(([a], [b]) => a - b);
+  const houseGroups = [...byHouse.entries()]
+    .filter(([, members]) => members.length >= threshold)
+    .sort(([a], [b]) => a - b);
+
+  const patterns: AspectPattern[] = [];
+  const mergedHouses = new Set<number>();
+  for (const [sign, members] of signGroups) {
+    let house: number | undefined;
+    for (const [h, hMembers] of houseGroups) {
+      if (!mergedHouses.has(h) && sameMembers(members, hMembers)) {
+        house = h;
+        mergedHouses.add(h);
+        break;
+      }
+    }
+    patterns.push(makeStellium(graph, config, members, sign, house));
+  }
+  for (const [house, members] of houseGroups) {
+    if (mergedHouses.has(house)) continue;
+    patterns.push(makeStellium(graph, config, members, undefined, house));
+  }
+  return patterns;
+}
 
 /**
  * T-square (ENGA-245): two planets in opposition whose midpoint of tension
@@ -250,19 +369,26 @@ export const detectYods: AspectPatternDetector = (graph, config) => {
  * Detector registry. Each concrete detector (see module doc) appends itself
  * here in its own follow-up issue.
  */
-const DETECTORS: AspectPatternDetector[] = [detectTSquares, detectYods];
+const DETECTORS: AspectPatternDetector[] = [detectTSquares, detectYods, detectStelliums];
 
 /**
  * Detect every special aspect pattern in a single chart. Builds the aspect
- * graph from the planet set + pairwise aspect list, then runs each registered
- * detector. Returns `[]` while the registry is empty (foundation state).
+ * graph from the planet set + pairwise aspect list (plus per-planet house
+ * assignments derived from `houses`, when available), then runs each registered
+ * detector.
  */
 export function detectAspectPatterns(
   planets: PlanetPosition[],
   aspects: Aspect[],
   config: Partial<AspectPatternConfig> = {},
+  houses: HouseCusp[] | null = null,
 ): AspectPattern[] {
   const merged: AspectPatternConfig = { ...DEFAULT_PATTERN_CONFIG, ...config };
-  const graph = new AspectGraph(planets, aspects);
+  let houseMap: Map<PlanetId, number> | undefined;
+  if (houses && houses.length === 12) {
+    houseMap = new Map<PlanetId, number>();
+    for (const p of planets) houseMap.set(p.id, getPlanetHouse(p.longitude, houses));
+  }
+  const graph = new AspectGraph(planets, aspects, houseMap);
   return DETECTORS.flatMap((detect) => detect(graph, merged));
 }

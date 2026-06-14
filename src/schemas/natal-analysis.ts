@@ -23,6 +23,9 @@ const AspectPatternSchema = z.object({
   apex: PlanetIdEnum.optional(),
   element: ElementEnum.optional(),
   modality: ModalityEnum.optional(),
+  sign: z.number().int().min(0).max(11).optional(),
+  house: z.number().int().min(1).max(12).optional(),
+  strong: z.boolean().optional(),
   orbAvg: z.number(),
 });
 
