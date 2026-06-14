@@ -453,14 +453,36 @@ describe('Grand Cross detector (ENGA-244)', () => {
     expect(gc.orbAvg).toBe(1);
   });
 
-  it('does not flag a bare T-square (one opposition + two squares)', () => {
+  it('does not flag a bare T-square as a grand cross', () => {
     const planets = [makePlanet('SUN', 0), makePlanet('MOON', 90), makePlanet('MARS', 180)];
     const aspects = [
       makeAspect('SUN', 'MARS', 'OPPOSITION', 180, 1),
       makeAspect('SUN', 'MOON', 'SQUARE', 90, 1),
       makeAspect('MOON', 'MARS', 'SQUARE', 90, 1),
     ];
-    expect(detectAspectPatterns(planets, aspects)).toEqual([]);
+    // A lone T-square is correctly emitted by its own detector, but it must not
+    // be promoted to a GRAND_CROSS (only one opposition, not two crossing ones).
+    const patterns = detectAspectPatterns(planets, aspects);
+    expect(patterns.filter((p) => p.type === 'GRAND_CROSS')).toEqual([]);
+  });
+
+  it('suppresses the four T-squares embedded in a grand cross', () => {
+    const planets = [
+      makePlanet('SUN', 0),
+      makePlanet('MOON', 90),
+      makePlanet('MARS', 180),
+      makePlanet('VENUS', 270),
+    ];
+    const aspects = crossAspects(['SUN', 'MOON', 'MARS', 'VENUS']);
+
+    // The geometry genuinely contains four embedded T-squares (one per vertex)...
+    expect(detectTSquares(new AspectGraph(planets, aspects))).toHaveLength(4);
+
+    // ...but the aggregator reports only the grand cross, not its constituents.
+    const patterns = detectAspectPatterns(planets, aspects);
+    expect(patterns).toHaveLength(1);
+    expect(patterns[0].type).toBe('GRAND_CROSS');
+    expect(patterns.some((p) => p.type === 'T_SQUARE')).toBe(false);
   });
 
   it('leaves modality undefined when the four signs disagree (orb spread)', () => {
