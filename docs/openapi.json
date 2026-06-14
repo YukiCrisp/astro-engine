@@ -2022,6 +2022,117 @@
                         "julianDay"
                       ],
                       "additionalProperties": false
+                    },
+                    "aspectPatterns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "STELLIUM",
+                              "GRAND_TRINE",
+                              "T_SQUARE",
+                              "GRAND_CROSS",
+                              "YOD",
+                              "KITE"
+                            ]
+                          },
+                          "planets": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "SUN",
+                                "MOON",
+                                "MERCURY",
+                                "VENUS",
+                                "MARS",
+                                "JUPITER",
+                                "SATURN",
+                                "URANUS",
+                                "NEPTUNE",
+                                "PLUTO",
+                                "TRUE_NODE",
+                                "CHIRON",
+                                "MEAN_NODE",
+                                "MEAN_LILITH",
+                                "TRUE_LILITH",
+                                "PHOLUS",
+                                "CERES",
+                                "PALLAS",
+                                "JUNO",
+                                "VESTA"
+                              ]
+                            }
+                          },
+                          "apex": {
+                            "type": "string",
+                            "enum": [
+                              "SUN",
+                              "MOON",
+                              "MERCURY",
+                              "VENUS",
+                              "MARS",
+                              "JUPITER",
+                              "SATURN",
+                              "URANUS",
+                              "NEPTUNE",
+                              "PLUTO",
+                              "TRUE_NODE",
+                              "CHIRON",
+                              "MEAN_NODE",
+                              "MEAN_LILITH",
+                              "TRUE_LILITH",
+                              "PHOLUS",
+                              "CERES",
+                              "PALLAS",
+                              "JUNO",
+                              "VESTA"
+                            ]
+                          },
+                          "element": {
+                            "type": "string",
+                            "enum": [
+                              "FIRE",
+                              "EARTH",
+                              "AIR",
+                              "WATER"
+                            ]
+                          },
+                          "modality": {
+                            "type": "string",
+                            "enum": [
+                              "CARDINAL",
+                              "FIXED",
+                              "MUTABLE"
+                            ]
+                          },
+                          "sign": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "house": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 12
+                          },
+                          "strong": {
+                            "type": "boolean"
+                          },
+                          "orbAvg": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "planets",
+                          "orbAvg"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -2029,7 +2140,8 @@
                     "houses",
                     "angles",
                     "aspects",
-                    "meta"
+                    "meta",
+                    "aspectPatterns"
                   ],
                   "additionalProperties": false
                 }
@@ -2565,6 +2677,117 @@
                         "julianDay"
                       ],
                       "additionalProperties": false
+                    },
+                    "aspectPatterns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "STELLIUM",
+                              "GRAND_TRINE",
+                              "T_SQUARE",
+                              "GRAND_CROSS",
+                              "YOD",
+                              "KITE"
+                            ]
+                          },
+                          "planets": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "SUN",
+                                "MOON",
+                                "MERCURY",
+                                "VENUS",
+                                "MARS",
+                                "JUPITER",
+                                "SATURN",
+                                "URANUS",
+                                "NEPTUNE",
+                                "PLUTO",
+                                "TRUE_NODE",
+                                "CHIRON",
+                                "MEAN_NODE",
+                                "MEAN_LILITH",
+                                "TRUE_LILITH",
+                                "PHOLUS",
+                                "CERES",
+                                "PALLAS",
+                                "JUNO",
+                                "VESTA"
+                              ]
+                            }
+                          },
+                          "apex": {
+                            "type": "string",
+                            "enum": [
+                              "SUN",
+                              "MOON",
+                              "MERCURY",
+                              "VENUS",
+                              "MARS",
+                              "JUPITER",
+                              "SATURN",
+                              "URANUS",
+                              "NEPTUNE",
+                              "PLUTO",
+                              "TRUE_NODE",
+                              "CHIRON",
+                              "MEAN_NODE",
+                              "MEAN_LILITH",
+                              "TRUE_LILITH",
+                              "PHOLUS",
+                              "CERES",
+                              "PALLAS",
+                              "JUNO",
+                              "VESTA"
+                            ]
+                          },
+                          "element": {
+                            "type": "string",
+                            "enum": [
+                              "FIRE",
+                              "EARTH",
+                              "AIR",
+                              "WATER"
+                            ]
+                          },
+                          "modality": {
+                            "type": "string",
+                            "enum": [
+                              "CARDINAL",
+                              "FIXED",
+                              "MUTABLE"
+                            ]
+                          },
+                          "sign": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "house": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 12
+                          },
+                          "strong": {
+                            "type": "boolean"
+                          },
+                          "orbAvg": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "planets",
+                          "orbAvg"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -2572,7 +2795,8 @@
                     "houses",
                     "angles",
                     "aspects",
-                    "meta"
+                    "meta",
+                    "aspectPatterns"
                   ],
                   "additionalProperties": false
                 }
@@ -6475,6 +6699,117 @@
                         "julianDay"
                       ],
                       "additionalProperties": false
+                    },
+                    "aspectPatterns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "STELLIUM",
+                              "GRAND_TRINE",
+                              "T_SQUARE",
+                              "GRAND_CROSS",
+                              "YOD",
+                              "KITE"
+                            ]
+                          },
+                          "planets": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "SUN",
+                                "MOON",
+                                "MERCURY",
+                                "VENUS",
+                                "MARS",
+                                "JUPITER",
+                                "SATURN",
+                                "URANUS",
+                                "NEPTUNE",
+                                "PLUTO",
+                                "TRUE_NODE",
+                                "CHIRON",
+                                "MEAN_NODE",
+                                "MEAN_LILITH",
+                                "TRUE_LILITH",
+                                "PHOLUS",
+                                "CERES",
+                                "PALLAS",
+                                "JUNO",
+                                "VESTA"
+                              ]
+                            }
+                          },
+                          "apex": {
+                            "type": "string",
+                            "enum": [
+                              "SUN",
+                              "MOON",
+                              "MERCURY",
+                              "VENUS",
+                              "MARS",
+                              "JUPITER",
+                              "SATURN",
+                              "URANUS",
+                              "NEPTUNE",
+                              "PLUTO",
+                              "TRUE_NODE",
+                              "CHIRON",
+                              "MEAN_NODE",
+                              "MEAN_LILITH",
+                              "TRUE_LILITH",
+                              "PHOLUS",
+                              "CERES",
+                              "PALLAS",
+                              "JUNO",
+                              "VESTA"
+                            ]
+                          },
+                          "element": {
+                            "type": "string",
+                            "enum": [
+                              "FIRE",
+                              "EARTH",
+                              "AIR",
+                              "WATER"
+                            ]
+                          },
+                          "modality": {
+                            "type": "string",
+                            "enum": [
+                              "CARDINAL",
+                              "FIXED",
+                              "MUTABLE"
+                            ]
+                          },
+                          "sign": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "house": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 12
+                          },
+                          "strong": {
+                            "type": "boolean"
+                          },
+                          "orbAvg": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "planets",
+                          "orbAvg"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -6482,7 +6817,8 @@
                     "houses",
                     "angles",
                     "aspects",
-                    "meta"
+                    "meta",
+                    "aspectPatterns"
                   ],
                   "additionalProperties": false
                 }
@@ -7548,6 +7884,117 @@
                         "julianDay"
                       ],
                       "additionalProperties": false
+                    },
+                    "aspectPatterns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "STELLIUM",
+                              "GRAND_TRINE",
+                              "T_SQUARE",
+                              "GRAND_CROSS",
+                              "YOD",
+                              "KITE"
+                            ]
+                          },
+                          "planets": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "SUN",
+                                "MOON",
+                                "MERCURY",
+                                "VENUS",
+                                "MARS",
+                                "JUPITER",
+                                "SATURN",
+                                "URANUS",
+                                "NEPTUNE",
+                                "PLUTO",
+                                "TRUE_NODE",
+                                "CHIRON",
+                                "MEAN_NODE",
+                                "MEAN_LILITH",
+                                "TRUE_LILITH",
+                                "PHOLUS",
+                                "CERES",
+                                "PALLAS",
+                                "JUNO",
+                                "VESTA"
+                              ]
+                            }
+                          },
+                          "apex": {
+                            "type": "string",
+                            "enum": [
+                              "SUN",
+                              "MOON",
+                              "MERCURY",
+                              "VENUS",
+                              "MARS",
+                              "JUPITER",
+                              "SATURN",
+                              "URANUS",
+                              "NEPTUNE",
+                              "PLUTO",
+                              "TRUE_NODE",
+                              "CHIRON",
+                              "MEAN_NODE",
+                              "MEAN_LILITH",
+                              "TRUE_LILITH",
+                              "PHOLUS",
+                              "CERES",
+                              "PALLAS",
+                              "JUNO",
+                              "VESTA"
+                            ]
+                          },
+                          "element": {
+                            "type": "string",
+                            "enum": [
+                              "FIRE",
+                              "EARTH",
+                              "AIR",
+                              "WATER"
+                            ]
+                          },
+                          "modality": {
+                            "type": "string",
+                            "enum": [
+                              "CARDINAL",
+                              "FIXED",
+                              "MUTABLE"
+                            ]
+                          },
+                          "sign": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "house": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 12
+                          },
+                          "strong": {
+                            "type": "boolean"
+                          },
+                          "orbAvg": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "planets",
+                          "orbAvg"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -7555,7 +8002,8 @@
                     "houses",
                     "angles",
                     "aspects",
-                    "meta"
+                    "meta",
+                    "aspectPatterns"
                   ],
                   "additionalProperties": false
                 }
@@ -8098,6 +8546,117 @@
                         "julianDay"
                       ],
                       "additionalProperties": false
+                    },
+                    "aspectPatterns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "STELLIUM",
+                              "GRAND_TRINE",
+                              "T_SQUARE",
+                              "GRAND_CROSS",
+                              "YOD",
+                              "KITE"
+                            ]
+                          },
+                          "planets": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "SUN",
+                                "MOON",
+                                "MERCURY",
+                                "VENUS",
+                                "MARS",
+                                "JUPITER",
+                                "SATURN",
+                                "URANUS",
+                                "NEPTUNE",
+                                "PLUTO",
+                                "TRUE_NODE",
+                                "CHIRON",
+                                "MEAN_NODE",
+                                "MEAN_LILITH",
+                                "TRUE_LILITH",
+                                "PHOLUS",
+                                "CERES",
+                                "PALLAS",
+                                "JUNO",
+                                "VESTA"
+                              ]
+                            }
+                          },
+                          "apex": {
+                            "type": "string",
+                            "enum": [
+                              "SUN",
+                              "MOON",
+                              "MERCURY",
+                              "VENUS",
+                              "MARS",
+                              "JUPITER",
+                              "SATURN",
+                              "URANUS",
+                              "NEPTUNE",
+                              "PLUTO",
+                              "TRUE_NODE",
+                              "CHIRON",
+                              "MEAN_NODE",
+                              "MEAN_LILITH",
+                              "TRUE_LILITH",
+                              "PHOLUS",
+                              "CERES",
+                              "PALLAS",
+                              "JUNO",
+                              "VESTA"
+                            ]
+                          },
+                          "element": {
+                            "type": "string",
+                            "enum": [
+                              "FIRE",
+                              "EARTH",
+                              "AIR",
+                              "WATER"
+                            ]
+                          },
+                          "modality": {
+                            "type": "string",
+                            "enum": [
+                              "CARDINAL",
+                              "FIXED",
+                              "MUTABLE"
+                            ]
+                          },
+                          "sign": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "house": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 12
+                          },
+                          "strong": {
+                            "type": "boolean"
+                          },
+                          "orbAvg": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "planets",
+                          "orbAvg"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -8105,7 +8664,8 @@
                     "houses",
                     "angles",
                     "aspects",
-                    "meta"
+                    "meta",
+                    "aspectPatterns"
                   ],
                   "additionalProperties": false
                 }
@@ -8676,6 +9236,117 @@
                         "julianDay"
                       ],
                       "additionalProperties": false
+                    },
+                    "aspectPatterns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "STELLIUM",
+                              "GRAND_TRINE",
+                              "T_SQUARE",
+                              "GRAND_CROSS",
+                              "YOD",
+                              "KITE"
+                            ]
+                          },
+                          "planets": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "SUN",
+                                "MOON",
+                                "MERCURY",
+                                "VENUS",
+                                "MARS",
+                                "JUPITER",
+                                "SATURN",
+                                "URANUS",
+                                "NEPTUNE",
+                                "PLUTO",
+                                "TRUE_NODE",
+                                "CHIRON",
+                                "MEAN_NODE",
+                                "MEAN_LILITH",
+                                "TRUE_LILITH",
+                                "PHOLUS",
+                                "CERES",
+                                "PALLAS",
+                                "JUNO",
+                                "VESTA"
+                              ]
+                            }
+                          },
+                          "apex": {
+                            "type": "string",
+                            "enum": [
+                              "SUN",
+                              "MOON",
+                              "MERCURY",
+                              "VENUS",
+                              "MARS",
+                              "JUPITER",
+                              "SATURN",
+                              "URANUS",
+                              "NEPTUNE",
+                              "PLUTO",
+                              "TRUE_NODE",
+                              "CHIRON",
+                              "MEAN_NODE",
+                              "MEAN_LILITH",
+                              "TRUE_LILITH",
+                              "PHOLUS",
+                              "CERES",
+                              "PALLAS",
+                              "JUNO",
+                              "VESTA"
+                            ]
+                          },
+                          "element": {
+                            "type": "string",
+                            "enum": [
+                              "FIRE",
+                              "EARTH",
+                              "AIR",
+                              "WATER"
+                            ]
+                          },
+                          "modality": {
+                            "type": "string",
+                            "enum": [
+                              "CARDINAL",
+                              "FIXED",
+                              "MUTABLE"
+                            ]
+                          },
+                          "sign": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "house": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 12
+                          },
+                          "strong": {
+                            "type": "boolean"
+                          },
+                          "orbAvg": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "planets",
+                          "orbAvg"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -8683,7 +9354,8 @@
                     "houses",
                     "angles",
                     "aspects",
-                    "meta"
+                    "meta",
+                    "aspectPatterns"
                   ],
                   "additionalProperties": false
                 }

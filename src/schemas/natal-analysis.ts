@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { PlanetIdEnum, NatalChartDataSchema } from './responses.js';
+import {
+  PlanetIdEnum, NatalChartDataSchema,
+  ElementEnum, ModalityEnum, AspectPatternSchema,
+} from './responses.js';
 import { NatalRequestSchema } from './natal.js';
 
 export { NatalRequestSchema as NatalAnalysisRequestSchema };
@@ -8,26 +11,8 @@ const ChartPatternTypeEnum = z.enum([
   'BUNDLE', 'BOWL', 'BUCKET', 'SEESAW', 'LOCOMOTIVE', 'SPLASH', 'SPLAY',
 ]);
 
-const ElementEnum = z.enum(['FIRE', 'EARTH', 'AIR', 'WATER']);
-const ModalityEnum = z.enum(['CARDINAL', 'FIXED', 'MUTABLE']);
 const PolarityEnum = z.enum(['MASCULINE', 'FEMININE']);
 const QuadrantEnum = z.enum(['ANGULAR', 'SUCCEDENT', 'CADENT']);
-
-const AspectPatternTypeEnum = z.enum([
-  'STELLIUM', 'GRAND_TRINE', 'T_SQUARE', 'GRAND_CROSS', 'YOD', 'KITE',
-]);
-
-const AspectPatternSchema = z.object({
-  type: AspectPatternTypeEnum,
-  planets: z.array(PlanetIdEnum),
-  apex: PlanetIdEnum.optional(),
-  element: ElementEnum.optional(),
-  modality: ModalityEnum.optional(),
-  sign: z.number().int().min(0).max(11).optional(),
-  house: z.number().int().min(1).max(12).optional(),
-  strong: z.boolean().optional(),
-  orbAvg: z.number(),
-});
 
 const ChartAnalysisSchema = z.object({
   pattern: z.object({

@@ -5,8 +5,8 @@ import {
   LunarReturnListRequestSchema,
   LunarReturnListResponseSchema,
 } from '../schemas/lunar-return.js';
-import { NatalChartDataSchema } from '../schemas/responses.js';
-import { calculateLunarReturn, listLunarReturns } from '../engine/index.js';
+import { NatalChartWithPatternsSchema } from '../schemas/responses.js';
+import { calculateLunarReturn, listLunarReturns, attachAspectPatterns } from '../engine/index.js';
 import { chartCache } from '../engine/cache.js';
 
 export async function lunarReturnRoute(app: FastifyInstance) {
@@ -18,11 +18,11 @@ export async function lunarReturnRoute(app: FastifyInstance) {
       description: 'Returns the natal chart calculated for the exact moment when the transiting Moon returns to the natal Moon longitude after the target date.',
       tags: ['charts'],
       body: LunarReturnRequestSchema,
-      response: { 200: NatalChartDataSchema },
+      response: { 200: NatalChartWithPatternsSchema },
     },
     handler: async (req) => {
       const cacheKey = chartCache.generateKey(req.body as Record<string, unknown>);
-      return chartCache.getOrSet(cacheKey, () => calculateLunarReturn(req.body), chartCache.natalTtlMs);
+      return chartCache.getOrSet(cacheKey, () => attachAspectPatterns(calculateLunarReturn(req.body)), chartCache.natalTtlMs);
     },
   });
 }

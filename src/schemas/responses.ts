@@ -86,6 +86,32 @@ export const NatalChartDataSchema = z.object({
   }),
 });
 
+// --- Special aspect patterns (grand trine, T-square, etc.) ---
+// Shared by the natal-analysis response and the single derived charts
+// (composite / progressed / solar-arc / solar/lunar return / transit).
+export const ElementEnum = z.enum(['FIRE', 'EARTH', 'AIR', 'WATER']);
+export const ModalityEnum = z.enum(['CARDINAL', 'FIXED', 'MUTABLE']);
+export const AspectPatternTypeEnum = z.enum([
+  'STELLIUM', 'GRAND_TRINE', 'T_SQUARE', 'GRAND_CROSS', 'YOD', 'KITE',
+]);
+
+export const AspectPatternSchema = z.object({
+  type: AspectPatternTypeEnum,
+  planets: z.array(PlanetIdEnum),
+  apex: PlanetIdEnum.optional(),
+  element: ElementEnum.optional(),
+  modality: ModalityEnum.optional(),
+  sign: z.number().int().min(0).max(11).optional(),
+  house: z.number().int().min(1).max(12).optional(),
+  strong: z.boolean().optional(),
+  orbAvg: z.number(),
+});
+
+// A single chart whose own geometry carries special aspect patterns.
+export const NatalChartWithPatternsSchema = NatalChartDataSchema.extend({
+  aspectPatterns: z.array(AspectPatternSchema),
+});
+
 export const TripleChartDataSchema = z.object({
   natal: NatalChartDataSchema,
   progressed: NatalChartDataSchema,

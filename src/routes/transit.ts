@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { TransitRequestSchema } from '../schemas/transit.js';
-import { NatalChartDataSchema } from '../schemas/responses.js';
-import { calculateTransit } from '../engine/index.js';
+import { NatalChartWithPatternsSchema } from '../schemas/responses.js';
+import { calculateTransit, attachAspectPatterns } from '../engine/index.js';
 import { chartCache } from '../engine/cache.js';
 
 export async function transitRoute(app: FastifyInstance) {
@@ -14,11 +14,11 @@ export async function transitRoute(app: FastifyInstance) {
       description: 'Returns planetary positions and house cusps for a given date/time/location.',
       tags: ['charts'],
       body: TransitRequestSchema,
-      response: { 200: NatalChartDataSchema },
+      response: { 200: NatalChartWithPatternsSchema },
     },
     handler: async (req) => {
       const cacheKey = chartCache.generateKey(req.body as Record<string, unknown>);
-      return chartCache.getOrSet(cacheKey, () => calculateTransit(req.body), chartCache.transitTtlMs);
+      return chartCache.getOrSet(cacheKey, () => attachAspectPatterns(calculateTransit(req.body)), chartCache.transitTtlMs);
     },
   });
 }

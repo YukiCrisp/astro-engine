@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { SolarArcRequestSchema } from '../schemas/solar-arc.js';
-import { NatalChartDataSchema } from '../schemas/responses.js';
-import { calculateSolarArc } from '../engine/index.js';
+import { NatalChartWithPatternsSchema } from '../schemas/responses.js';
+import { calculateSolarArc, attachAspectPatterns } from '../engine/index.js';
 import { chartCache } from '../engine/cache.js';
 
 export async function solarArcRoute(app: FastifyInstance) {
@@ -14,11 +14,11 @@ export async function solarArcRoute(app: FastifyInstance) {
       description: 'Returns planetary positions directed by the solar arc (the distance the progressed Sun has traveled from its natal position).',
       tags: ['charts'],
       body: SolarArcRequestSchema,
-      response: { 200: NatalChartDataSchema },
+      response: { 200: NatalChartWithPatternsSchema },
     },
     handler: async (req) => {
       const cacheKey = chartCache.generateKey(req.body as Record<string, unknown>);
-      return chartCache.getOrSet(cacheKey, () => calculateSolarArc(req.body), chartCache.natalTtlMs);
+      return chartCache.getOrSet(cacheKey, () => attachAspectPatterns(calculateSolarArc(req.body)), chartCache.natalTtlMs);
     },
   });
 }
