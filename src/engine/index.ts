@@ -127,7 +127,7 @@ export function calculateNatalAnalysis(params: {
   zodiacSystem?: ZodiacSystem;
 } & EngineFilterParams): NatalChartData & { analysis: ChartAnalysis } {
   const chart = calculateNatal(params);
-  const analysis = analyzeChart(chart.planets, chart.houses, chart.angles);
+  const analysis = analyzeChart(chart.planets, chart.houses, chart.angles, chart.aspects);
   return { ...chart, analysis };
 }
 

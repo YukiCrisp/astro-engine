@@ -13,6 +13,19 @@ const ModalityEnum = z.enum(['CARDINAL', 'FIXED', 'MUTABLE']);
 const PolarityEnum = z.enum(['MASCULINE', 'FEMININE']);
 const QuadrantEnum = z.enum(['ANGULAR', 'SUCCEDENT', 'CADENT']);
 
+const AspectPatternTypeEnum = z.enum([
+  'STELLIUM', 'GRAND_TRINE', 'T_SQUARE', 'GRAND_CROSS', 'YOD', 'KITE',
+]);
+
+const AspectPatternSchema = z.object({
+  type: AspectPatternTypeEnum,
+  planets: z.array(PlanetIdEnum),
+  apex: PlanetIdEnum.optional(),
+  element: ElementEnum.optional(),
+  modality: ModalityEnum.optional(),
+  orbAvg: z.number(),
+});
+
 const ChartAnalysisSchema = z.object({
   pattern: z.object({
     type: ChartPatternTypeEnum,
@@ -28,6 +41,7 @@ const ChartAnalysisSchema = z.object({
     polarities: z.record(PolarityEnum, z.array(PlanetIdEnum)),
     quadrants: z.record(QuadrantEnum, z.array(PlanetIdEnum)),
   }),
+  aspectPatterns: z.array(AspectPatternSchema),
 });
 
 export const NatalAnalysisResponseSchema = NatalChartDataSchema.extend({
