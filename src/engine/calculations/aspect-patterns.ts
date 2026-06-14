@@ -157,10 +157,52 @@ export type AspectPatternDetector = (
 ) => AspectPattern[];
 
 /**
+ * T-square (ENGA-245): two planets in opposition whose midpoint of tension
+ * resolves onto a third planet — the **apex** — that squares both ends. The
+ * apex is the figure's focal release point, so it is reported as `apex`.
+ *
+ * A given opposition can host more than one apex (each squared planet yields a
+ * distinct T-square), and the same chart can contain several oppositions, so
+ * every (opposition, apex) combination is emitted as its own pattern.
+ *
+ * Modality: in a clean T-square all three planets share one modality (opposite
+ * signs always share modality, and a square from either end lands a third of
+ * the zodiac away — same modality again). With real orbs the apex can drift
+ * into a neighbouring sign, so the label follows the apex's sign, the planet
+ * that defines the figure's expression. A grand cross contains two embedded
+ * T-squares; suppressing those belongs to the higher-level aggregator, not
+ * here — this detector reports what it geometrically finds.
+ */
+export function detectTSquares(graph: AspectGraph): AspectPattern[] {
+  const patterns: AspectPattern[] = [];
+  for (const opposition of graph.aspects) {
+    if (opposition.type !== 'OPPOSITION') continue;
+    const { planetA: endA, planetB: endB } = opposition;
+    const squaresA = new Set(graph.neighbors(endA, 'SQUARE'));
+    for (const apex of graph.neighbors(endB, 'SQUARE')) {
+      if (apex === endA || apex === endB || !squaresA.has(apex)) continue;
+      const squareToA = graph.between(endA, apex);
+      const squareToB = graph.between(endB, apex);
+      if (!squareToA || !squareToB) continue;
+      const [first, second] = endA < endB ? [endA, endB] : [endB, endA];
+      const apexPos = graph.position(apex);
+      patterns.push({
+        type: 'T_SQUARE',
+        planets: [first, second, apex],
+        apex,
+        modality: apexPos ? signModality(apexPos.sign) : undefined,
+        orbAvg: averageOrb([opposition, squareToA, squareToB]),
+      });
+    }
+  }
+  return patterns;
+}
+
+/**
  * Detector registry. Each concrete detector (see module doc) appends itself
  * here in its own follow-up issue. Empty in the foundation.
  */
-const DETECTORS: AspectPatternDetector[] = [];
+const DETECTORS: AspectPatternDetector[] = [detectTSquares];
 
 /**
  * Detect every special aspect pattern in a single chart. Builds the aspect

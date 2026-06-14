@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   AspectGraph,
   detectAspectPatterns,
+  detectTSquares,
   averageOrb,
   signElement,
   signModality,
@@ -120,10 +121,12 @@ describe('detectAspectPatterns', () => {
     expect(DEFAULT_PATTERN_CONFIG.yodQuincunxOrb).toBe(3);
   });
 
-  // Foundation ships with an empty detector registry. Each concrete detector
+  // Concrete detectors register themselves into the foundation registry
   // (Grand Trine = ENGA-243, Grand Cross = ENGA-244, T-Square = ENGA-245,
-  // Stellium = ENGA-246, Yod = ENGA-247, Kite = ENGA-248) adds its own cases.
-  it('returns no patterns until detectors are registered', () => {
+  // Stellium = ENGA-246, Yod = ENGA-247, Kite = ENGA-248). A grand-trine
+  // geometry (three trines, no opposition/square) contains no T-square, so the
+  // pipeline still surfaces nothing for it.
+  it('surfaces no pattern for a grand-trine geometry', () => {
     const planets = [makePlanet('SUN', 0), makePlanet('MOON', 120), makePlanet('MARS', 240)];
     const aspects = [
       makeAspect('SUN', 'MOON', 'TRINE', 120, 1),
@@ -135,5 +138,100 @@ describe('detectAspectPatterns', () => {
 
   it('accepts a partial config without throwing', () => {
     expect(detectAspectPatterns([], [], { stelliumThreshold: 4 })).toEqual([]);
+  });
+
+  it('detects a cardinal T-square through the full pipeline', () => {
+    const planets = [makePlanet('SUN', 0), makePlanet('MOON', 180), makePlanet('MARS', 90)];
+    const aspects = [
+      makeAspect('SUN', 'MOON', 'OPPOSITION', 180, 1),
+      makeAspect('SUN', 'MARS', 'SQUARE', 90, 2),
+      makeAspect('MOON', 'MARS', 'SQUARE', 90, 3),
+    ];
+    expect(detectAspectPatterns(planets, aspects)).toEqual([
+      { type: 'T_SQUARE', planets: ['MOON', 'SUN', 'MARS'], apex: 'MARS', modality: 'CARDINAL', orbAvg: 2 },
+    ]);
+  });
+});
+
+describe('detectTSquares', () => {
+  // A clean cardinal T-square: SUN(ARI 0°) opp MOON(LIB 180°), both square
+  // the apex MARS(CAN 90°). Apex is the focal planet; modality follows it.
+  const cardinal = () => {
+    const planets = [makePlanet('SUN', 0), makePlanet('MOON', 180), makePlanet('MARS', 90)];
+    const aspects = [
+      makeAspect('SUN', 'MOON', 'OPPOSITION', 180, 1),
+      makeAspect('SUN', 'MARS', 'SQUARE', 90, 2),
+      makeAspect('MOON', 'MARS', 'SQUARE', 90, 3),
+    ];
+    return new AspectGraph(planets, aspects);
+  };
+
+  it('identifies the opposition ends, the apex, and the orb average', () => {
+    const [pattern, ...rest] = detectTSquares(cardinal());
+    expect(rest).toEqual([]);
+    expect(pattern.type).toBe('T_SQUARE');
+    expect(pattern.apex).toBe('MARS');
+    expect(pattern.planets).toEqual(['MOON', 'SUN', 'MARS']); // opposition ends sorted, apex last
+    expect(pattern.orbAvg).toBeCloseTo((1 + 2 + 3) / 3);
+  });
+
+  it('labels modality from the apex sign — fixed', () => {
+    // TAU(30°) opp SCO(210°), apex LEO(120°) squares both. LEO is fixed.
+    const planets = [makePlanet('VENUS', 30), makePlanet('MARS', 210), makePlanet('SATURN', 120)];
+    const aspects = [
+      makeAspect('VENUS', 'MARS', 'OPPOSITION', 180, 0),
+      makeAspect('VENUS', 'SATURN', 'SQUARE', 90, 1),
+      makeAspect('MARS', 'SATURN', 'SQUARE', 90, 1),
+    ];
+    const [pattern] = detectTSquares(new AspectGraph(planets, aspects));
+    expect(pattern.apex).toBe('SATURN');
+    expect(pattern.modality).toBe('FIXED');
+  });
+
+  it('labels modality from the apex sign — mutable', () => {
+    // GEM(60°) opp SAG(240°), apex VIR(150°) squares both. VIR is mutable.
+    const planets = [makePlanet('MERCURY', 60), makePlanet('JUPITER', 240), makePlanet('NEPTUNE', 150)];
+    const aspects = [
+      makeAspect('MERCURY', 'JUPITER', 'OPPOSITION', 180, 0),
+      makeAspect('MERCURY', 'NEPTUNE', 'SQUARE', 90, 2),
+      makeAspect('JUPITER', 'NEPTUNE', 'SQUARE', 90, 2),
+    ];
+    const [pattern] = detectTSquares(new AspectGraph(planets, aspects));
+    expect(pattern.modality).toBe('MUTABLE');
+  });
+
+  it('requires the apex to square BOTH ends, not just one', () => {
+    const planets = [makePlanet('SUN', 0), makePlanet('MOON', 180), makePlanet('MARS', 90)];
+    const aspects = [
+      makeAspect('SUN', 'MOON', 'OPPOSITION', 180, 1),
+      makeAspect('SUN', 'MARS', 'SQUARE', 90, 2), // MARS squares SUN but not MOON
+    ];
+    expect(detectTSquares(new AspectGraph(planets, aspects))).toEqual([]);
+  });
+
+  it('emits one T-square per apex sharing the same opposition', () => {
+    // Two apices (MARS at 90°, SATURN at 270°) both square the SUN–MOON axis.
+    const planets = [
+      makePlanet('SUN', 0), makePlanet('MOON', 180),
+      makePlanet('MARS', 90), makePlanet('SATURN', 270),
+    ];
+    const aspects = [
+      makeAspect('SUN', 'MOON', 'OPPOSITION', 180, 1),
+      makeAspect('SUN', 'MARS', 'SQUARE', 90, 0),
+      makeAspect('MOON', 'MARS', 'SQUARE', 90, 0),
+      makeAspect('SUN', 'SATURN', 'SQUARE', 90, 0),
+      makeAspect('MOON', 'SATURN', 'SQUARE', 90, 0),
+    ];
+    const apices = detectTSquares(new AspectGraph(planets, aspects)).map((p) => p.apex).sort();
+    expect(apices).toEqual(['MARS', 'SATURN']);
+  });
+
+  it('returns nothing without an opposition backbone', () => {
+    const planets = [makePlanet('SUN', 0), makePlanet('MARS', 90), makePlanet('SATURN', 180)];
+    const aspects = [
+      makeAspect('SUN', 'MARS', 'SQUARE', 90, 1),
+      makeAspect('MARS', 'SATURN', 'SQUARE', 90, 1),
+    ];
+    expect(detectTSquares(new AspectGraph(planets, aspects))).toEqual([]);
   });
 });
