@@ -17,7 +17,7 @@ import { getPlanetHouse } from './houses.js';
  *   - T_SQUARE     → ENGA-245
  *   - STELLIUM     → ENGA-246
  *   - YOD          → ENGA-247
- *   - KITE         → ENGA-248
+ *   - KITE         → ENGA-248 (landed)
  *
  * `detectAspectPatterns` runs every registered detector; figure types whose
  * detector has not landed yet simply do not appear. Parent plan: ENGA-230.
@@ -465,10 +465,67 @@ export function detectGrandTrine(
 }
 
 /**
+ * Kite (ENGA-248): a Grand Trine plus a fourth planet that opposes one of its
+ * vertices and sextiles the other two. The opposed vertex's apex sits at the
+ * tip of the trine; the fourth planet — the figure's focal "tail" — is reported
+ * as `apex`, since it channels the trine's energy into an action point.
+ *
+ * Detection reuses `detectGrandTrine`: for every grand trine found, each other
+ * planet is tested as the fourth point. A valid kite has exactly one vertex in
+ * OPPOSITION to the fourth planet and the remaining two in SEXTILE to it. The
+ * shared element (if any) is inherited from the underlying grand trine, and
+ * `orbAvg` averages all six constituent aspects (three trines, one opposition,
+ * two sextiles). One kite is emitted per (grand trine, fourth planet) pair, so
+ * a grand trine with two qualifying tails yields two kites.
+ */
+export function detectKite(
+  graph: AspectGraph,
+  config?: AspectPatternConfig,
+): AspectPattern[] {
+  const patterns: AspectPattern[] = [];
+  for (const trine of detectGrandTrine(graph, config)) {
+    const vertices = trine.planets;
+    for (const fourth of graph.planets) {
+      if (vertices.includes(fourth.id)) continue;
+      // The fourth planet must oppose exactly one vertex; the other two are
+      // then its sextile legs. Find the opposed vertex (at most one matches).
+      const apexVertex = vertices.find(
+        (v) => graph.between(fourth.id, v)?.type === 'OPPOSITION',
+      );
+      if (apexVertex === undefined) continue;
+      const legs = vertices.filter((v) => v !== apexVertex);
+      const sextiles = legs.map((v) => graph.between(fourth.id, v));
+      if (!sextiles.every((edge) => edge?.type === 'SEXTILE')) continue;
+      const opposition = graph.between(fourth.id, apexVertex)!;
+      const trineEdges = [
+        graph.between(vertices[0], vertices[1])!,
+        graph.between(vertices[0], vertices[2])!,
+        graph.between(vertices[1], vertices[2])!,
+      ];
+      patterns.push({
+        type: 'KITE',
+        planets: [...vertices, fourth.id],
+        apex: fourth.id,
+        element: trine.element,
+        orbAvg: averageOrb([...trineEdges, opposition, ...(sextiles as Aspect[])]),
+      });
+    }
+  }
+  return patterns;
+}
+
+/**
  * Detector registry. Each concrete detector (see module doc) appends itself
  * here in its own follow-up issue.
  */
-const DETECTORS: AspectPatternDetector[] = [detectGrandTrine, detectTSquares, detectYods, detectStelliums, grandCrossDetector];
+const DETECTORS: AspectPatternDetector[] = [
+  detectGrandTrine,
+  detectTSquares,
+  detectYods,
+  detectStelliums,
+  grandCrossDetector,
+  detectKite,
+];
 
 /**
  * Aggregation pass: drop T-squares fully contained in a grand cross.
@@ -481,6 +538,10 @@ const DETECTORS: AspectPatternDetector[] = [detectGrandTrine, detectTSquares, de
  * A T-square that shares only part of a cross (≥1 planet outside it) is an
  * independent figure and survives. This is the de-duplication the T-square
  * detector deliberately defers to "the higher-level aggregator".
+ *
+ * Note: a Kite likewise embeds a Grand Trine, but — unlike the cross/T-square
+ * case — the convention is to report both, so the grand trine is intentionally
+ * NOT suppressed here (gate-confirmed behavior, ENGA-263).
  */
 function suppressEmbeddedTSquares(patterns: AspectPattern[]): AspectPattern[] {
   const crossSets = patterns
