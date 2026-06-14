@@ -1,5 +1,7 @@
-import type { PlanetId, PlanetPosition, HouseCusp, ChartAngles } from '../types.js';
+import type { PlanetId, PlanetPosition, HouseCusp, ChartAngles, Aspect } from '../types.js';
 import { getPlanetHouse } from './houses.js';
+import { detectAspectPatterns } from './aspect-patterns.js';
+import type { AspectPattern } from './aspect-patterns.js';
 
 const MAJOR_PLANETS: readonly PlanetId[] = [
   'SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS',
@@ -32,6 +34,7 @@ export interface ChartAnalysis {
   culminatingPlanet: PlanetId | null;
   risingPlanet: PlanetId | null;
   distribution: ChartDistribution;
+  aspectPatterns: AspectPattern[];
 }
 
 /** Angular distance between two longitudes (0 to 180). */
@@ -243,11 +246,13 @@ export function analyzeChart(
   planets: PlanetPosition[],
   houses: HouseCusp[] | null,
   angles: ChartAngles | null,
+  aspects: Aspect[] = [],
 ): ChartAnalysis {
   return {
     pattern: detectChartPattern(planets),
     culminatingPlanet: angles ? findCulminatingPlanet(planets, angles) : null,
     risingPlanet: houses && angles ? findRisingPlanet(planets, houses, angles) : null,
     distribution: calculateDistribution(planets, houses),
+    aspectPatterns: detectAspectPatterns(planets, aspects),
   };
 }
