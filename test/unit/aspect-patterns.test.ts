@@ -8,6 +8,7 @@ import {
   signModality,
   DEFAULT_PATTERN_CONFIG,
 } from '../../src/engine/calculations/aspect-patterns.js';
+import { detectAspects } from '../../src/engine/calculations/aspects.js';
 import type { PlanetPosition, Aspect, AspectType, PlanetId } from '../../src/engine/types.js';
 
 const SIGN_NAMES = ['ARI', 'TAU', 'GEM', 'CAN', 'LEO', 'VIR', 'LIB', 'SCO', 'SAG', 'CAP', 'AQU', 'PIS'] as const;
@@ -233,5 +234,102 @@ describe('detectTSquares', () => {
       makeAspect('MARS', 'SATURN', 'SQUARE', 90, 1),
     ];
     expect(detectTSquares(new AspectGraph(planets, aspects))).toEqual([]);
+  });
+});
+
+describe('YOD detector (ENGA-247)', () => {
+  // Canonical Yod: SUN(0°) sextile VENUS(60°); both quincunx the apex MARS(210°).
+  //   |210-0|   = 150  → quincunx leg A
+  //   |210-60|  = 150  → quincunx leg B
+  //   |60-0|    = 60   → sextile base
+  const yodPlanets = [makePlanet('SUN', 0), makePlanet('VENUS', 60), makePlanet('MARS', 210)];
+  const yodAspects = [
+    makeAspect('SUN', 'VENUS', 'SEXTILE', 60, 0.5),
+    makeAspect('SUN', 'MARS', 'QUINCUNX', 150, 1),
+    makeAspect('VENUS', 'MARS', 'QUINCUNX', 150, 2),
+  ];
+
+  it('detects a Yod from a sextile base with two quincunx legs to a common apex', () => {
+    const patterns = detectAspectPatterns(yodPlanets, yodAspects);
+    expect(patterns).toHaveLength(1);
+    const yod = patterns[0];
+    expect(yod.type).toBe('YOD');
+    expect(yod.apex).toBe('MARS');
+    // base pair sorted, apex last
+    expect(yod.planets).toEqual(['SUN', 'VENUS', 'MARS']);
+    // average orb across sextile + both quincunx legs: (0.5 + 1 + 2) / 3
+    expect(yod.orbAvg).toBeCloseTo(1.1667, 3);
+  });
+
+  it('requires a real sextile base — two quincunxes alone are not a Yod', () => {
+    const aspects = [
+      // no SUN-VENUS sextile; the base pair is unconnected
+      makeAspect('SUN', 'MARS', 'QUINCUNX', 150, 1),
+      makeAspect('VENUS', 'MARS', 'QUINCUNX', 150, 1),
+    ];
+    expect(detectAspectPatterns(yodPlanets, aspects)).toEqual([]);
+  });
+
+  it('rejects a leg whose quincunx orb exceeds the dedicated yodQuincunxOrb', () => {
+    const aspects = [
+      makeAspect('SUN', 'VENUS', 'SEXTILE', 60, 0.5),
+      makeAspect('SUN', 'MARS', 'QUINCUNX', 150, 1),
+      // leg wider than the default 3° dedicated quincunx orb
+      makeAspect('VENUS', 'MARS', 'QUINCUNX', 150, 3.5),
+    ];
+    expect(detectAspectPatterns(yodPlanets, aspects)).toEqual([]);
+  });
+
+  it('honours a tightened yodQuincunxOrb from config', () => {
+    const aspects = [
+      makeAspect('SUN', 'VENUS', 'SEXTILE', 60, 0.5),
+      makeAspect('SUN', 'MARS', 'QUINCUNX', 150, 2.5),
+      makeAspect('VENUS', 'MARS', 'QUINCUNX', 150, 1),
+    ];
+    // default orb (3) → detected; tightened to 2 → leg at 2.5 rejected
+    expect(detectAspectPatterns(yodPlanets, aspects)).toHaveLength(1);
+    expect(detectAspectPatterns(yodPlanets, aspects, { yodQuincunxOrb: 2 })).toEqual([]);
+  });
+
+  it('does not constrain the sextile base by the quincunx orb (wide sextile still valid)', () => {
+    const aspects = [
+      // sextile orb 4.5° — wider than yodQuincunxOrb but within a normal sextile orb
+      makeAspect('SUN', 'VENUS', 'SEXTILE', 60, 4.5),
+      makeAspect('SUN', 'MARS', 'QUINCUNX', 150, 1),
+      makeAspect('VENUS', 'MARS', 'QUINCUNX', 150, 1),
+    ];
+    expect(detectAspectPatterns(yodPlanets, aspects)).toHaveLength(1);
+  });
+
+  it('finds two distinct apexes sharing the same sextile base', () => {
+    // SUN(0) sextile VENUS(60); apexes MARS(210) and also a second body at 210°-ish
+    // Use MARS(210) and SATURN(210) both quincunx to the base → two Yods.
+    const planets = [
+      makePlanet('SUN', 0),
+      makePlanet('VENUS', 60),
+      makePlanet('MARS', 210),
+      makePlanet('SATURN', 211),
+    ];
+    const aspects = [
+      makeAspect('SUN', 'VENUS', 'SEXTILE', 60, 0.5),
+      makeAspect('SUN', 'MARS', 'QUINCUNX', 150, 1),
+      makeAspect('VENUS', 'MARS', 'QUINCUNX', 150, 1),
+      makeAspect('SUN', 'SATURN', 'QUINCUNX', 150, 1),
+      makeAspect('VENUS', 'SATURN', 'QUINCUNX', 150, 2),
+    ];
+    const patterns = detectAspectPatterns(planets, aspects);
+    expect(patterns).toHaveLength(2);
+    expect(patterns.map((p) => p.apex).sort()).toEqual(['MARS', 'SATURN']);
+  });
+
+  it('end-to-end: detects a Yod from detectAspects output on real longitudes', () => {
+    // MERCURY(0) sextile MARS(60); JUPITER(210) quincunx both. No luminaries
+    // so no orb bonus muddies the legs.
+    const planets = [makePlanet('MERCURY', 0), makePlanet('MARS', 60), makePlanet('JUPITER', 210)];
+    const aspects = detectAspects(planets);
+    const patterns = detectAspectPatterns(planets, aspects);
+    expect(patterns).toHaveLength(1);
+    expect(patterns[0].type).toBe('YOD');
+    expect(patterns[0].apex).toBe('JUPITER');
   });
 });

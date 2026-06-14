@@ -199,10 +199,58 @@ export function detectTSquares(graph: AspectGraph): AspectPattern[] {
 }
 
 /**
- * Detector registry. Each concrete detector (see module doc) appends itself
- * here in its own follow-up issue. Empty in the foundation.
+ * Yod ("Finger of God"): two planets in a SEXTILE (60°) base, both forming a
+ * QUINCUNX (150°) leg to a common third planet — the apex. (ENGA-247)
+ *
+ * The sextile base keeps the standard sextile orb already applied by
+ * `detectAspects`; only the two quincunx legs are re-tightened to the dedicated
+ * `yodQuincunxOrb`, so a luminary-widened or otherwise loose quincunx in the
+ * graph won't admit a sloppy Yod. We read quincunx candidates from the graph
+ * (so detection inherits `detectAspects`' classification) and enforce the
+ * dedicated orb as an additional, tighter constraint.
  */
-const DETECTORS: AspectPatternDetector[] = [detectTSquares];
+export const detectYods: AspectPatternDetector = (graph, config) => {
+  const results: AspectPattern[] = [];
+  const seen = new Set<string>();
+
+  for (const sextile of graph.aspects) {
+    if (sextile.type !== 'SEXTILE') continue;
+    const { planetA: a, planetB: b } = sextile;
+
+    // Apex candidates: planets quincunx to BOTH ends of the sextile base.
+    const apexes = graph
+      .neighbors(a, 'QUINCUNX')
+      .filter((c) => graph.hasAspect(b, c, 'QUINCUNX'));
+
+    for (const apex of apexes) {
+      const legA = graph.between(a, apex);
+      const legB = graph.between(b, apex);
+      if (!legA || !legB) continue;
+      // Re-tighten both legs to the dedicated quincunx orb.
+      if (legA.orb > config.yodQuincunxOrb || legB.orb > config.yodQuincunxOrb) continue;
+
+      const base = [a, b].sort();
+      const key = [...base, apex].sort().join('|');
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      results.push({
+        type: 'YOD',
+        planets: [base[0], base[1], apex],
+        apex,
+        orbAvg: averageOrb([sextile, legA, legB]),
+      });
+    }
+  }
+
+  return results;
+};
+
+/**
+ * Detector registry. Each concrete detector (see module doc) appends itself
+ * here in its own follow-up issue.
+ */
+const DETECTORS: AspectPatternDetector[] = [detectTSquares, detectYods];
 
 /**
  * Detect every special aspect pattern in a single chart. Builds the aspect
