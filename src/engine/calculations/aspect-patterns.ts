@@ -12,15 +12,15 @@ import { getPlanetHouse } from './houses.js';
  * detector lives in its own follow-up issue and registers itself in
  * `DETECTORS` below:
  *
- *   - GRAND_TRINE  → ENGA-243
+ *   - GRAND_TRINE  → ENGA-243 (landed)
  *   - GRAND_CROSS  → ENGA-244
  *   - T_SQUARE     → ENGA-245
  *   - STELLIUM     → ENGA-246
  *   - YOD          → ENGA-247
  *   - KITE         → ENGA-248
  *
- * The foundation ships with an empty registry, so `detectAspectPatterns`
- * returns `[]` until detectors land. Parent plan: ENGA-230.
+ * `detectAspectPatterns` runs every registered detector; figure types whose
+ * detector has not landed yet simply do not appear. Parent plan: ENGA-230.
  */
 
 export type AspectPatternType =
@@ -366,10 +366,50 @@ export const detectYods: AspectPatternDetector = (graph, config) => {
 };
 
 /**
+ * Grand Trine (ENGA-243): three planets mutually linked by 120° trines — a
+ * 3-clique in the chart's TRINE subgraph. Every closed trine triangle is one
+ * grand trine. When all three planets sit in signs of the same element the
+ * figure is labelled with that element; a dissociate grand trine that spans
+ * more than one element is reported with `element` left undefined.
+ *
+ * The triangle scan walks planet index triples `i < j < k`, so each clique is
+ * emitted exactly once and the figure's `planets` follow chart order.
+ */
+export function detectGrandTrine(
+  graph: AspectGraph,
+  _config?: AspectPatternConfig,
+): AspectPattern[] {
+  const planets = graph.planets;
+  const patterns: AspectPattern[] = [];
+  for (let i = 0; i < planets.length; i++) {
+    for (let j = i + 1; j < planets.length; j++) {
+      const ab = graph.between(planets[i].id, planets[j].id);
+      if (ab?.type !== 'TRINE') continue;
+      for (let k = j + 1; k < planets.length; k++) {
+        const ac = graph.between(planets[i].id, planets[k].id);
+        if (ac?.type !== 'TRINE') continue;
+        const bc = graph.between(planets[j].id, planets[k].id);
+        if (bc?.type !== 'TRINE') continue;
+        const trio = [planets[i], planets[j], planets[k]];
+        const element = signElement(trio[0].sign);
+        const shared = trio.every((p) => signElement(p.sign) === element);
+        patterns.push({
+          type: 'GRAND_TRINE',
+          planets: trio.map((p) => p.id),
+          element: shared ? element : undefined,
+          orbAvg: averageOrb([ab, ac, bc]),
+        });
+      }
+    }
+  }
+  return patterns;
+}
+
+/**
  * Detector registry. Each concrete detector (see module doc) appends itself
  * here in its own follow-up issue.
  */
-const DETECTORS: AspectPatternDetector[] = [detectTSquares, detectYods, detectStelliums];
+const DETECTORS: AspectPatternDetector[] = [detectGrandTrine, detectTSquares, detectYods, detectStelliums];
 
 /**
  * Detect every special aspect pattern in a single chart. Builds the aspect

@@ -9,36 +9,7 @@ import {
   DEFAULT_PATTERN_CONFIG,
 } from '../../src/engine/calculations/aspect-patterns.js';
 import { detectAspects } from '../../src/engine/calculations/aspects.js';
-import type { PlanetPosition, Aspect, AspectType, PlanetId } from '../../src/engine/types.js';
-
-const SIGN_NAMES = ['ARI', 'TAU', 'GEM', 'CAN', 'LEO', 'VIR', 'LIB', 'SCO', 'SAG', 'CAP', 'AQU', 'PIS'] as const;
-
-/** Build a minimal planet at a given longitude. Shared helper for detector tests. */
-export function makePlanet(id: string, longitude: number): PlanetPosition {
-  const sign = Math.floor(longitude / 30) % 12;
-  return {
-    id: id as PlanetId,
-    longitude,
-    latitude: 0,
-    speed: 1,
-    isRetrograde: false,
-    sign,
-    signName: SIGN_NAMES[sign],
-    degree: longitude % 30,
-    declination: 0,
-  };
-}
-
-/** Build an aspect edge between two planets. Shared helper for detector tests. */
-export function makeAspect(
-  planetA: string,
-  planetB: string,
-  type: AspectType,
-  angle: number,
-  orb = 0,
-): Aspect {
-  return { planetA: planetA as PlanetId, planetB: planetB as PlanetId, type, angle, orb };
-}
+import { makePlanet, makeAspect } from './aspect-pattern-helpers.js';
 
 describe('signElement', () => {
   it('maps signs to their element (cycle of 4)', () => {
@@ -122,19 +93,25 @@ describe('detectAspectPatterns', () => {
     expect(DEFAULT_PATTERN_CONFIG.yodQuincunxOrb).toBe(3);
   });
 
-  // Concrete detectors register themselves into the foundation registry
-  // (Grand Trine = ENGA-243, Grand Cross = ENGA-244, T-Square = ENGA-245,
-  // Stellium = ENGA-246, Yod = ENGA-247, Kite = ENGA-248). A grand-trine
-  // geometry (three trines, no opposition/square) hosts no T-square or Yod, and
-  // with the planets spread across distinct signs and no shared house it forms
-  // no stellium either, so the pipeline surfaces nothing for it.
-  it('surfaces no pattern for a grand-trine geometry', () => {
+  // The registry runs whichever detectors have landed (Grand Trine = ENGA-243,
+  // Grand Cross = ENGA-244, T-Square = ENGA-245, Stellium = ENGA-246,
+  // Yod = ENGA-247, Kite = ENGA-248). Each detector's own test file covers it
+  // in depth; here we only confirm the registry dispatches to them.
+  it('runs the registered detectors over the chart', () => {
     const planets = [makePlanet('SUN', 0), makePlanet('MOON', 120), makePlanet('MARS', 240)];
     const aspects = [
       makeAspect('SUN', 'MOON', 'TRINE', 120, 1),
       makeAspect('MOON', 'MARS', 'TRINE', 120, 2),
       makeAspect('SUN', 'MARS', 'TRINE', 120, 1.5),
     ];
+    expect(detectAspectPatterns(planets, aspects)).toEqual([
+      { type: 'GRAND_TRINE', planets: ['SUN', 'MOON', 'MARS'], element: 'FIRE', orbAvg: 1.5 },
+    ]);
+  });
+
+  it('returns no patterns when no figure is present', () => {
+    const planets = [makePlanet('SUN', 0), makePlanet('MOON', 45)];
+    const aspects = [makeAspect('SUN', 'MOON', 'SEMISQUARE', 45, 0)];
     expect(detectAspectPatterns(planets, aspects)).toEqual([]);
   });
 
