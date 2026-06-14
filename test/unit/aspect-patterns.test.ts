@@ -416,3 +416,77 @@ describe('detectStelliums', () => {
     expect(patterns.map((p) => p.sign).sort()).toEqual([0, 4]);
   });
 });
+
+describe('Grand Cross detector (ENGA-244)', () => {
+  // A grand cross = two oppositions crossing at right angles, i.e. 4 planets
+  // joined by 2 oppositions + 4 squares. Geometry: ~0°/90°/180°/270°.
+  function crossAspects(p: [string, string, string, string]): Aspect[] {
+    const [a, b, c, d] = p; // a-c & b-d oppose; consecutive pairs square
+    return [
+      makeAspect(a, c, 'OPPOSITION', 180, 1),
+      makeAspect(b, d, 'OPPOSITION', 180, 1),
+      makeAspect(a, b, 'SQUARE', 90, 1),
+      makeAspect(b, c, 'SQUARE', 90, 1),
+      makeAspect(c, d, 'SQUARE', 90, 1),
+      makeAspect(d, a, 'SQUARE', 90, 1),
+    ];
+  }
+
+  it('detects a cardinal grand cross and classifies its modality', () => {
+    const planets = [
+      makePlanet('SUN', 0),    // ARI cardinal
+      makePlanet('MOON', 90),  // CAN cardinal
+      makePlanet('MARS', 180), // LIB cardinal
+      makePlanet('VENUS', 270),// CAP cardinal
+    ];
+    const aspects = crossAspects(['SUN', 'MOON', 'MARS', 'VENUS']);
+
+    const patterns = detectAspectPatterns(planets, aspects);
+
+    expect(patterns).toHaveLength(1);
+    const gc = patterns[0];
+    expect(gc.type).toBe('GRAND_CROSS');
+    expect([...gc.planets].sort()).toEqual(['MARS', 'MOON', 'SUN', 'VENUS']);
+    expect(gc.modality).toBe('CARDINAL');
+    expect(gc.apex).toBeUndefined();
+    expect(gc.element).toBeUndefined();
+    expect(gc.orbAvg).toBe(1);
+  });
+
+  it('does not flag a bare T-square (one opposition + two squares)', () => {
+    const planets = [makePlanet('SUN', 0), makePlanet('MOON', 90), makePlanet('MARS', 180)];
+    const aspects = [
+      makeAspect('SUN', 'MARS', 'OPPOSITION', 180, 1),
+      makeAspect('SUN', 'MOON', 'SQUARE', 90, 1),
+      makeAspect('MOON', 'MARS', 'SQUARE', 90, 1),
+    ];
+    expect(detectAspectPatterns(planets, aspects)).toEqual([]);
+  });
+
+  it('leaves modality undefined when the four signs disagree (orb spread)', () => {
+    // Geometrically a cross, but one planet sits in an adjacent-modality sign.
+    const planets = [
+      makePlanet('SUN', 0),    // ARI cardinal
+      makePlanet('MOON', 92),  // CAN cardinal
+      makePlanet('MARS', 184), // LIB cardinal
+      makePlanet('VENUS', 268),// SAG mutable (pushed back by orb)
+    ];
+    const aspects = crossAspects(['SUN', 'MOON', 'MARS', 'VENUS']);
+
+    const patterns = detectAspectPatterns(planets, aspects);
+
+    expect(patterns).toHaveLength(1);
+    expect(patterns[0].modality).toBeUndefined();
+  });
+
+  it('does not double-count the same four-planet cross', () => {
+    const planets = [
+      makePlanet('SUN', 0),
+      makePlanet('MOON', 90),
+      makePlanet('MARS', 180),
+      makePlanet('VENUS', 270),
+    ];
+    const aspects = crossAspects(['SUN', 'MOON', 'MARS', 'VENUS']);
+    expect(detectAspectPatterns(planets, aspects)).toHaveLength(1);
+  });
+});

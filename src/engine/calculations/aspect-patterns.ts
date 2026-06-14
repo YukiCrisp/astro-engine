@@ -365,6 +365,64 @@ export const detectYods: AspectPatternDetector = (graph, config) => {
   return results;
 };
 
+/** Shared modality of a planet set, or `undefined` if the signs disagree. */
+function sharedModality(graph: AspectGraph, ids: PlanetId[]): ModalityType | undefined {
+  let modality: ModalityType | undefined;
+  for (const id of ids) {
+    const pos = graph.position(id);
+    if (!pos) return undefined;
+    const m = signModality(pos.sign);
+    if (modality === undefined) modality = m;
+    else if (modality !== m) return undefined;
+  }
+  return modality;
+}
+
+/**
+ * Grand Cross (ENGA-244): four planets forming two crossing oppositions joined
+ * by four squares — a T-square extended into a full cross. We pair every two
+ * vertex-disjoint oppositions and keep the pair only when all four connecting
+ * legs are squares. Modality is set when the four planets share one (an exact
+ * cross is single-modality; orb spread across a sign boundary leaves it unset).
+ */
+const grandCrossDetector: AspectPatternDetector = (graph) => {
+  const oppositions = graph.aspects.filter((a) => a.type === 'OPPOSITION');
+  const patterns: AspectPattern[] = [];
+  const seen = new Set<string>();
+
+  for (let i = 0; i < oppositions.length; i++) {
+    for (let j = i + 1; j < oppositions.length; j++) {
+      const op1 = oppositions[i];
+      const op2 = oppositions[j];
+      const set = new Set([op1.planetA, op1.planetB, op2.planetA, op2.planetB]);
+      if (set.size !== 4) continue; // oppositions must be vertex-disjoint
+
+      // The four legs joining the two oppositions must all be squares.
+      const legs = [
+        graph.between(op1.planetA, op2.planetA),
+        graph.between(op1.planetA, op2.planetB),
+        graph.between(op1.planetB, op2.planetA),
+        graph.between(op1.planetB, op2.planetB),
+      ];
+      if (!legs.every((leg) => leg?.type === 'SQUARE')) continue;
+
+      const planets = [...set].sort();
+      const key = planets.join('|');
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const constituents = [op1, op2, ...(legs as Aspect[])];
+      patterns.push({
+        type: 'GRAND_CROSS',
+        planets,
+        modality: sharedModality(graph, planets),
+        orbAvg: averageOrb(constituents),
+      });
+    }
+  }
+  return patterns;
+};
+
 /**
  * Grand Trine (ENGA-243): three planets mutually linked by 120° trines — a
  * 3-clique in the chart's TRINE subgraph. Every closed trine triangle is one
@@ -409,7 +467,7 @@ export function detectGrandTrine(
  * Detector registry. Each concrete detector (see module doc) appends itself
  * here in its own follow-up issue.
  */
-const DETECTORS: AspectPatternDetector[] = [detectGrandTrine, detectTSquares, detectYods, detectStelliums];
+const DETECTORS: AspectPatternDetector[] = [detectGrandTrine, detectTSquares, detectYods, detectStelliums, grandCrossDetector];
 
 /**
  * Detect every special aspect pattern in a single chart. Builds the aspect
