@@ -125,8 +125,9 @@ describe('detectAspectPatterns', () => {
   // Concrete detectors register themselves into the foundation registry
   // (Grand Trine = ENGA-243, Grand Cross = ENGA-244, T-Square = ENGA-245,
   // Stellium = ENGA-246, Yod = ENGA-247, Kite = ENGA-248). A grand-trine
-  // geometry (three trines, no opposition/square) contains no T-square, so the
-  // pipeline still surfaces nothing for it.
+  // geometry (three trines, no opposition/square) hosts no T-square or Yod, and
+  // with the planets spread across distinct signs and no shared house it forms
+  // no stellium either, so the pipeline surfaces nothing for it.
   it('surfaces no pattern for a grand-trine geometry', () => {
     const planets = [makePlanet('SUN', 0), makePlanet('MOON', 120), makePlanet('MARS', 240)];
     const aspects = [
@@ -331,5 +332,110 @@ describe('YOD detector (ENGA-247)', () => {
     expect(patterns).toHaveLength(1);
     expect(patterns[0].type).toBe('YOD');
     expect(patterns[0].apex).toBe('JUPITER');
+  });
+});
+
+/** Twelve equal (whole-sign-aligned) house cusps: house N spans sign N-1. */
+function equalHouses(): { house: number; longitude: number }[] {
+  return Array.from({ length: 12 }, (_, i) => ({ house: i + 1, longitude: i * 30 }));
+}
+
+describe('detectStelliums', () => {
+  it('detects a same-sign cluster at the default threshold (3)', () => {
+    // Three planets all in Aries (sign 0), no house data.
+    const planets = [makePlanet('SUN', 1), makePlanet('MERCURY', 28), makePlanet('VENUS', 15)];
+    const patterns = detectAspectPatterns(planets, []);
+    expect(patterns).toHaveLength(1);
+    const [s] = patterns;
+    expect(s.type).toBe('STELLIUM');
+    expect(s.sign).toBe(0);
+    expect(s.element).toBe('FIRE');
+    expect(s.modality).toBe('CARDINAL');
+    expect(s.house).toBeUndefined();
+    expect(s.strong).toBe(false);
+    // Planets are ordered by longitude.
+    expect(s.planets).toEqual(['SUN', 'VENUS', 'MERCURY']);
+  });
+
+  it('does not flag a 2-planet cluster', () => {
+    const planets = [makePlanet('SUN', 1), makePlanet('VENUS', 15)];
+    expect(detectAspectPatterns(planets, [])).toEqual([]);
+  });
+
+  it('marks clusters of 4+ as strong', () => {
+    const planets = [
+      makePlanet('SUN', 1),
+      makePlanet('VENUS', 8),
+      makePlanet('MERCURY', 15),
+      makePlanet('MARS', 25),
+    ];
+    const [s] = detectAspectPatterns(planets, []);
+    expect(s.planets).toHaveLength(4);
+    expect(s.strong).toBe(true);
+  });
+
+  it('honors a 3/4 threshold switch via config', () => {
+    const planets = [makePlanet('SUN', 1), makePlanet('VENUS', 15), makePlanet('MERCURY', 28)];
+    // Default threshold 3 → detected.
+    expect(detectAspectPatterns(planets, [])).toHaveLength(1);
+    // Threshold raised to 4 → the same three planets no longer qualify.
+    expect(detectAspectPatterns(planets, [], { stelliumThreshold: 4 })).toEqual([]);
+  });
+
+  it('averages conjunction orbs of cluster members (0 when none conjunct)', () => {
+    const planets = [makePlanet('SUN', 1), makePlanet('VENUS', 5), makePlanet('MERCURY', 9)];
+    const aspects = [
+      makeAspect('SUN', 'VENUS', 'CONJUNCTION', 0, 2),
+      makeAspect('VENUS', 'MERCURY', 'CONJUNCTION', 0, 4),
+    ];
+    const [withConj] = detectAspectPatterns(planets, aspects);
+    expect(withConj.orbAvg).toBe(3);
+    // No aspects supplied → no constituent conjunctions → 0.
+    const [noConj] = detectAspectPatterns(planets, []);
+    expect(noConj.orbAvg).toBe(0);
+  });
+
+  it('detects a same-house cluster spanning different signs', () => {
+    // House 1 spans 0°–90° (signs Aries/Taurus/Gemini); planets in three signs.
+    const houses = [
+      { house: 1, longitude: 0 }, { house: 2, longitude: 90 }, { house: 3, longitude: 100 },
+      { house: 4, longitude: 130 }, { house: 5, longitude: 160 }, { house: 6, longitude: 190 },
+      { house: 7, longitude: 220 }, { house: 8, longitude: 250 }, { house: 9, longitude: 280 },
+      { house: 10, longitude: 310 }, { house: 11, longitude: 330 }, { house: 12, longitude: 350 },
+    ];
+    const planets = [makePlanet('SUN', 10), makePlanet('VENUS', 40), makePlanet('MARS', 70)];
+    const [s] = detectAspectPatterns(planets, [], {}, houses);
+    expect(s.type).toBe('STELLIUM');
+    expect(s.house).toBe(1);
+    expect(s.sign).toBeUndefined();
+    expect(s.element).toBeUndefined();
+    expect(s.modality).toBeUndefined();
+  });
+
+  it('merges a same-sign and same-house cluster into one pattern', () => {
+    // Three planets in Aries, all in house 1 (equal houses) → single pattern.
+    const planets = [makePlanet('SUN', 5), makePlanet('VENUS', 15), makePlanet('MERCURY', 25)];
+    const patterns = detectAspectPatterns(planets, [], {}, equalHouses());
+    expect(patterns).toHaveLength(1);
+    const [s] = patterns;
+    expect(s.sign).toBe(0);
+    expect(s.house).toBe(1);
+    expect(s.element).toBe('FIRE');
+  });
+
+  it('skips house grouping when no house data is supplied', () => {
+    const planets = [makePlanet('SUN', 10), makePlanet('VENUS', 40), makePlanet('MARS', 70)];
+    // Different signs, no houses → nothing to cluster.
+    expect(detectAspectPatterns(planets, [])).toEqual([]);
+  });
+
+  it('reports multiple independent stelliums', () => {
+    const planets = [
+      makePlanet('SUN', 1), makePlanet('VENUS', 12), makePlanet('MERCURY', 25), // Aries
+      makePlanet('MARS', 122), makePlanet('JUPITER', 135), makePlanet('SATURN', 148), // Leo
+    ];
+    const patterns = detectAspectPatterns(planets, []);
+    expect(patterns).toHaveLength(2);
+    expect(patterns.map((p) => p.sign).sort()).toEqual([0, 4]);
   });
 });

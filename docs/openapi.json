@@ -1425,6 +1425,19 @@
                                   "MUTABLE"
                                 ]
                               },
+                              "sign": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 11
+                              },
+                              "house": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 12
+                              },
+                              "strong": {
+                                "type": "boolean"
+                              },
                               "orbAvg": {
                                 "type": "number"
                               }

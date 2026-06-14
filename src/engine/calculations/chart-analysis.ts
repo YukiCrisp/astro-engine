@@ -253,6 +253,6 @@ export function analyzeChart(
     culminatingPlanet: angles ? findCulminatingPlanet(planets, angles) : null,
     risingPlanet: houses && angles ? findRisingPlanet(planets, houses, angles) : null,
     distribution: calculateDistribution(planets, houses),
-    aspectPatterns: detectAspectPatterns(planets, aspects),
+    aspectPatterns: detectAspectPatterns(planets, aspects, {}, houses),
   };
 }
