@@ -288,9 +288,10 @@ function detectStelliums(graph: AspectGraph, config: AspectPatternConfig): Aspec
  * signs always share modality, and a square from either end lands a third of
  * the zodiac away — same modality again). With real orbs the apex can drift
  * into a neighbouring sign, so the label follows the apex's sign, the planet
- * that defines the figure's expression. A grand cross contains two embedded
+ * that defines the figure's expression. A grand cross contains four embedded
  * T-squares; suppressing those belongs to the higher-level aggregator, not
- * here — this detector reports what it geometrically finds.
+ * here — this detector reports what it geometrically finds, and
+ * `detectAspectPatterns` removes the embedded ones once both detectors run.
  */
 export function detectTSquares(graph: AspectGraph): AspectPattern[] {
   const patterns: AspectPattern[] = [];
@@ -365,6 +366,64 @@ export const detectYods: AspectPatternDetector = (graph, config) => {
   return results;
 };
 
+/** Shared modality of a planet set, or `undefined` if the signs disagree. */
+function sharedModality(graph: AspectGraph, ids: PlanetId[]): ModalityType | undefined {
+  let modality: ModalityType | undefined;
+  for (const id of ids) {
+    const pos = graph.position(id);
+    if (!pos) return undefined;
+    const m = signModality(pos.sign);
+    if (modality === undefined) modality = m;
+    else if (modality !== m) return undefined;
+  }
+  return modality;
+}
+
+/**
+ * Grand Cross (ENGA-244): four planets forming two crossing oppositions joined
+ * by four squares — a T-square extended into a full cross. We pair every two
+ * vertex-disjoint oppositions and keep the pair only when all four connecting
+ * legs are squares. Modality is set when the four planets share one (an exact
+ * cross is single-modality; orb spread across a sign boundary leaves it unset).
+ */
+const grandCrossDetector: AspectPatternDetector = (graph) => {
+  const oppositions = graph.aspects.filter((a) => a.type === 'OPPOSITION');
+  const patterns: AspectPattern[] = [];
+  const seen = new Set<string>();
+
+  for (let i = 0; i < oppositions.length; i++) {
+    for (let j = i + 1; j < oppositions.length; j++) {
+      const op1 = oppositions[i];
+      const op2 = oppositions[j];
+      const set = new Set([op1.planetA, op1.planetB, op2.planetA, op2.planetB]);
+      if (set.size !== 4) continue; // oppositions must be vertex-disjoint
+
+      // The four legs joining the two oppositions must all be squares.
+      const legs = [
+        graph.between(op1.planetA, op2.planetA),
+        graph.between(op1.planetA, op2.planetB),
+        graph.between(op1.planetB, op2.planetA),
+        graph.between(op1.planetB, op2.planetB),
+      ];
+      if (!legs.every((leg) => leg?.type === 'SQUARE')) continue;
+
+      const planets = [...set].sort();
+      const key = planets.join('|');
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const constituents = [op1, op2, ...(legs as Aspect[])];
+      patterns.push({
+        type: 'GRAND_CROSS',
+        planets,
+        modality: sharedModality(graph, planets),
+        orbAvg: averageOrb(constituents),
+      });
+    }
+  }
+  return patterns;
+};
+
 /**
  * Grand Trine (ENGA-243): three planets mutually linked by 120° trines — a
  * 3-clique in the chart's TRINE subgraph. Every closed trine triangle is one
@@ -409,7 +468,31 @@ export function detectGrandTrine(
  * Detector registry. Each concrete detector (see module doc) appends itself
  * here in its own follow-up issue.
  */
-const DETECTORS: AspectPatternDetector[] = [detectGrandTrine, detectTSquares, detectYods, detectStelliums];
+const DETECTORS: AspectPatternDetector[] = [detectGrandTrine, detectTSquares, detectYods, detectStelliums, grandCrossDetector];
+
+/**
+ * Aggregation pass: drop T-squares fully contained in a grand cross.
+ *
+ * A grand cross is geometrically four overlapping T-squares — each of its four
+ * vertices is the apex of one. `detectTSquares` therefore emits all four for any
+ * cross, but reporting them alongside the cross is astrologically redundant: the
+ * cross already names the configuration. Once both detectors have run we remove
+ * every `T_SQUARE` whose three planets are a subset of some `GRAND_CROSS`'s four.
+ * A T-square that shares only part of a cross (≥1 planet outside it) is an
+ * independent figure and survives. This is the de-duplication the T-square
+ * detector deliberately defers to "the higher-level aggregator".
+ */
+function suppressEmbeddedTSquares(patterns: AspectPattern[]): AspectPattern[] {
+  const crossSets = patterns
+    .filter((p) => p.type === 'GRAND_CROSS')
+    .map((p) => new Set(p.planets));
+  if (crossSets.length === 0) return patterns;
+  return patterns.filter(
+    (p) =>
+      p.type !== 'T_SQUARE' ||
+      !crossSets.some((set) => p.planets.every((id) => set.has(id))),
+  );
+}
 
 /**
  * Detect every special aspect pattern in a single chart. Builds the aspect
@@ -430,5 +513,6 @@ export function detectAspectPatterns(
     for (const p of planets) houseMap.set(p.id, getPlanetHouse(p.longitude, houses));
   }
   const graph = new AspectGraph(planets, aspects, houseMap);
-  return DETECTORS.flatMap((detect) => detect(graph, merged));
+  const patterns = DETECTORS.flatMap((detect) => detect(graph, merged));
+  return suppressEmbeddedTSquares(patterns);
 }
