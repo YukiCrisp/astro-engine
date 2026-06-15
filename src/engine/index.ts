@@ -9,6 +9,8 @@ import { midpointLongitude } from './calculations/composite.js';
 import { calculateVocPeriods } from './calculations/voc-moon.js';
 import { analyzeChart } from './calculations/chart-analysis.js';
 import type { ChartAnalysis } from './calculations/chart-analysis.js';
+import { detectAspectPatterns } from './calculations/aspect-patterns.js';
+import type { AspectPattern } from './calculations/aspect-patterns.js';
 import { calculateArabicParts } from './calculations/arabic-parts.js';
 import type { ArabicPartId } from './calculations/arabic-parts.js';
 import { calculateFixedStars } from './calculations/fixed-stars.js';
@@ -84,6 +86,26 @@ function toAspectConfig(p?: EngineFilterParams): AspectConfig | undefined {
     orbOverrides: p.aspectOrbs,
     sunOrbBonus: p.sunOrbBonus,
     moonOrbBonus: p.moonOrbBonus,
+  };
+}
+
+/**
+ * A single chart augmented with the special aspect patterns found in its own
+ * geometry (grand trine, T-square, etc.).
+ */
+export type NatalChartWithPatterns = NatalChartData & { aspectPatterns: AspectPattern[] };
+
+/**
+ * Attach `aspectPatterns` to a single-chart result, reusing the same detection
+ * path as `analyzeChart` (`detectAspectPatterns`). Used by the composite and
+ * derived single charts (progressed / solar-arc / solar & lunar return /
+ * transit) so their responses carry special aspect shapes like natal does.
+ * Inter-chart (synastry / transit-overlay) patterns are out of scope (phase 2).
+ */
+export function attachAspectPatterns(chart: NatalChartData): NatalChartWithPatterns {
+  return {
+    ...chart,
+    aspectPatterns: detectAspectPatterns(chart.planets, chart.aspects, {}, chart.houses),
   };
 }
 

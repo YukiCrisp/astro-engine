@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { SolarReturnRequestSchema } from '../schemas/solar-return.js';
-import { NatalChartDataSchema } from '../schemas/responses.js';
-import { calculateSolarReturn } from '../engine/index.js';
+import { NatalChartWithPatternsSchema } from '../schemas/responses.js';
+import { calculateSolarReturn, attachAspectPatterns } from '../engine/index.js';
 import { chartCache } from '../engine/cache.js';
 
 export async function solarReturnRoute(app: FastifyInstance) {
@@ -14,11 +14,11 @@ export async function solarReturnRoute(app: FastifyInstance) {
       description: 'Returns the natal chart calculated for the exact moment when the transiting Sun returns to the natal Sun longitude in the target year.',
       tags: ['charts'],
       body: SolarReturnRequestSchema,
-      response: { 200: NatalChartDataSchema },
+      response: { 200: NatalChartWithPatternsSchema },
     },
     handler: async (req) => {
       const cacheKey = chartCache.generateKey(req.body as Record<string, unknown>);
-      return chartCache.getOrSet(cacheKey, () => calculateSolarReturn(req.body), chartCache.natalTtlMs);
+      return chartCache.getOrSet(cacheKey, () => attachAspectPatterns(calculateSolarReturn(req.body)), chartCache.natalTtlMs);
     },
   });
 }
