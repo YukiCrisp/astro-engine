@@ -32,6 +32,22 @@ function angularDistance(a: number, b: number): number {
   return diff > 180 ? 360 - diff : diff;
 }
 
+function wrapTo180(x: number): number {
+  return (((x % 360) + 540) % 360) - 180;
+}
+
+// Signed orb whose sign flips as the Moon crosses the exact aspect, so a
+// zero-crossing can be detected for every Ptolemaic aspect. For conjunction
+// (0deg) and opposition (180deg) the unsigned distance-minus-angle never changes
+// sign, so those aspects must use the signed separation instead; the symmetric
+// aspects keep using unsigned-distance-minus-angle, which crosses zero from
+// either side.
+function aspectOrb(moonLon: number, planetLon: number, exactAngle: number): number {
+  if (exactAngle === 0) return wrapTo180(moonLon - planetLon);
+  if (exactAngle === 180) return wrapTo180(moonLon - planetLon - 180);
+  return angularDistance(moonLon, planetLon) - exactAngle;
+}
+
 interface MoonIngress {
   jd: number;
   signEntering: number;
@@ -97,13 +113,12 @@ export function findLastExactAspect(segStart: number, segEnd: number): AspectHit
       const prevPlanetLon = prevPlanetLons.get(pid)!;
 
       for (const [aspectType, exactAngle] of PTOLEMAIC_ASPECTS) {
-        const prevDist = angularDistance(prevMoonLon, prevPlanetLon);
-        const curDist = angularDistance(curMoonLon, curPlanetLon);
+        const prevOrb = aspectOrb(prevMoonLon, prevPlanetLon, exactAngle);
+        const curOrb = aspectOrb(curMoonLon, curPlanetLon, exactAngle);
 
-        const prevOrb = prevDist - exactAngle;
-        const curOrb = curDist - exactAngle;
-
-        // Guard: only consider if both distances are within 15deg of the exact angle
+        // Guard: only consider if both orbs are within 15deg of exact. This also
+        // discards the +/-180 wrap discontinuity of the signed conj/opp orb,
+        // which only ever occurs far (>=165deg) from exact.
         if (Math.abs(prevOrb) > 15 || Math.abs(curOrb) > 15) continue;
 
         // Sign flip means crossing exact
@@ -115,8 +130,7 @@ export function findLastExactAspect(segStart: number, segEnd: number): AspectHit
             const mid = (lo + hi) / 2;
             const midMoon = calcSinglePlanet(mid, 'MOON').longitude;
             const midPlanet = calcSinglePlanet(mid, pid).longitude;
-            const midDist = angularDistance(midMoon, midPlanet);
-            const midOrb = midDist - exactAngle;
+            const midOrb = aspectOrb(midMoon, midPlanet, exactAngle);
             if (prevOrb < 0 ? midOrb < 0 : midOrb >= 0) {
               lo = mid;
             } else {
