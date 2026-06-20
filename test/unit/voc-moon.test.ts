@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'bun:test';
+import { describe, test, expect } from 'vitest';
 import { calculateVocPeriods } from '../../src/engine/calculations/voc-moon.js';
 import { calcSinglePlanet } from '../../src/engine/sweph-adapter.js';
 import { toJulianDay } from '../../src/utils/date.js';
