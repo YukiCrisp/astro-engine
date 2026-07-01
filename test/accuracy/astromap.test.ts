@@ -45,6 +45,32 @@ describe('Astromap MC line — internal consistency', () => {
     expect(Math.abs(angularDiff(mc.points[0].lon, ic.points[0].lon))).toBeCloseTo(180, 5);
   });
 
+  it('is zodiac-independent: MC line uses physical (tropical) longitude, not sidereal', () => {
+    // Astrocartography plots each planet's physical angularity, a real
+    // sky-position fact independent of the zodiac's ecliptic labeling. The
+    // Sun's MC line must be built from the equinox-referenced (tropical)
+    // longitude. Feeding the sidereal longitude (tropical − ayanamsha) into the
+    // equinox-referenced RA transform would rotate the line by the ayanamsha
+    // (~24°) and place the planet at the wrong terrestrial longitude. This test
+    // locks the correct behaviour so a future "add sidereal support" change
+    // cannot silently corrupt the map. See ENGA-1255.
+    const tropical = calcSinglePlanet(jd, 'SUN');
+    const sidereal = calcSinglePlanet(jd, 'SUN', 'sidereal');
+    // Sanity: the two systems really do differ by the ayanamsha (~24°).
+    expect(Math.abs(angularDiff(tropical.longitude, sidereal.longitude))).toBeGreaterThan(20);
+
+    const lines = computeAstromapLines(jd, ['SUN']);
+    const mcLon = lines.find((l) => l.lineType === 'MC')!.points[0].lon;
+
+    // The real MC line matches the TROPICAL-derived RA...
+    const expectedTropical = normalizeLon(eclipticToRA(tropical.longitude, tropical.latitude) - gmstDeg(jd));
+    expect(Math.abs(angularDiff(mcLon, expectedTropical))).toBeLessThan(0.01);
+
+    // ...and is far (>15°) from the line a (wrong) sidereal longitude would give.
+    const wrongSidereal = normalizeLon(eclipticToRA(sidereal.longitude, sidereal.latitude) - gmstDeg(jd));
+    expect(Math.abs(angularDiff(mcLon, wrongSidereal))).toBeGreaterThan(15);
+  });
+
   it('all 10 planets have an MC line', () => {
     const lines = computeAstromapLines(jd, [
       'SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS',

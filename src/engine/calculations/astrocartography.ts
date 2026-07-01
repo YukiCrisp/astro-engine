@@ -179,6 +179,18 @@ function toPoint(p: CirclePoint): AstromapPoint {
  *
  * MC/IC are closed-form constant-longitude lines. AC/DC are the rising/setting
  * halves of the body's horizon great circle, traced parametrically.
+ *
+ * Intentionally zodiac-independent — there is deliberately no `zodiacSystem`
+ * parameter. Astrocartography plots where each planet is physically *angular*
+ * on Earth, which is a real sky-position fact (right ascension + declination +
+ * Earth's rotation). The tropical/sidereal choice only relabels the zero point
+ * of ecliptic longitude (sidereal = tropical − ayanamsha, ~24°); it does not
+ * move the planet in the sky, so the map lines are identical in both systems —
+ * matching mainstream astrocartography software. `calcSinglePlanet` is called
+ * WITHOUT a zodiacSystem argument on purpose: its equinox-referenced RA/dec
+ * transform is only correct for tropical (equinox-referenced) longitudes.
+ * Passing a sidereal longitude here would rotate every line by the ayanamsha
+ * and place planets at the wrong terrestrial longitude — see ENGA-1255.
  */
 export function computeAstromapLines(jdUt: number, planetIds: PlanetId[]): AstromapLine[] {
   const planets = planetIds.filter((id) => ASTROMAP_PLANETS_SET.has(id));
