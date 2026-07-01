@@ -1,6 +1,6 @@
 import { calcSinglePlanet } from '../sweph-adapter.js';
 import { toJulianDay, fromJulianDay } from '../../utils/date.js';
-import type { PlanetId, AspectType, SignName, VocMoonPeriod } from '../types.js';
+import type { PlanetId, AspectType, SignName, VocMoonPeriod, ZodiacSystem } from '../types.js';
 
 const PTOLEMAIC_ASPECTS: [AspectType, number][] = [
   ['CONJUNCTION', 0],
@@ -53,13 +53,13 @@ interface MoonIngress {
   signEntering: number;
 }
 
-export function findMoonIngresses(jdStart: number, jdEnd: number): MoonIngress[] {
+export function findMoonIngresses(jdStart: number, jdEnd: number, zodiacSystem?: ZodiacSystem): MoonIngress[] {
   const ingresses: MoonIngress[] = [];
-  let prevSign = getSign(calcSinglePlanet(jdStart, 'MOON').longitude);
+  let prevSign = getSign(calcSinglePlanet(jdStart, 'MOON', zodiacSystem).longitude);
   let jd = jdStart + STEP_2H;
 
   while (jd <= jdEnd) {
-    const moonLon = calcSinglePlanet(jd, 'MOON').longitude;
+    const moonLon = calcSinglePlanet(jd, 'MOON', zodiacSystem).longitude;
     const curSign = getSign(moonLon);
 
     if (curSign !== prevSign) {
@@ -68,7 +68,7 @@ export function findMoonIngresses(jdStart: number, jdEnd: number): MoonIngress[]
       let hi = jd;
       while (hi - lo > PRECISION_1MIN) {
         const mid = (lo + hi) / 2;
-        const midSign = getSign(calcSinglePlanet(mid, 'MOON').longitude);
+        const midSign = getSign(calcSinglePlanet(mid, 'MOON', zodiacSystem).longitude);
         if (midSign === prevSign) {
           lo = mid;
         } else {
@@ -93,23 +93,23 @@ interface AspectHit {
   aspectType: AspectType;
 }
 
-export function findLastExactAspect(segStart: number, segEnd: number): AspectHit | null {
+export function findLastExactAspect(segStart: number, segEnd: number, zodiacSystem?: ZodiacSystem): AspectHit | null {
   let latestHit: AspectHit | null = null;
 
   // Cache planet positions at each step to avoid redundant calculations
-  let prevMoonLon = calcSinglePlanet(segStart, 'MOON').longitude;
+  let prevMoonLon = calcSinglePlanet(segStart, 'MOON', zodiacSystem).longitude;
   const prevPlanetLons = new Map<PlanetId, number>();
   for (const pid of VOC_TARGET_PLANETS) {
-    prevPlanetLons.set(pid, calcSinglePlanet(segStart, pid).longitude);
+    prevPlanetLons.set(pid, calcSinglePlanet(segStart, pid, zodiacSystem).longitude);
   }
 
   let jd = segStart + STEP_2H;
   while (jd <= segEnd + STEP_2H) {
     const stepJd = Math.min(jd, segEnd);
-    const curMoonLon = calcSinglePlanet(stepJd, 'MOON').longitude;
+    const curMoonLon = calcSinglePlanet(stepJd, 'MOON', zodiacSystem).longitude;
 
     for (const pid of VOC_TARGET_PLANETS) {
-      const curPlanetLon = calcSinglePlanet(stepJd, pid).longitude;
+      const curPlanetLon = calcSinglePlanet(stepJd, pid, zodiacSystem).longitude;
       const prevPlanetLon = prevPlanetLons.get(pid)!;
 
       for (const [aspectType, exactAngle] of PTOLEMAIC_ASPECTS) {
@@ -128,8 +128,8 @@ export function findLastExactAspect(segStart: number, segEnd: number): AspectHit
           let hi = stepJd;
           while (hi - lo > PRECISION_1MIN) {
             const mid = (lo + hi) / 2;
-            const midMoon = calcSinglePlanet(mid, 'MOON').longitude;
-            const midPlanet = calcSinglePlanet(mid, pid).longitude;
+            const midMoon = calcSinglePlanet(mid, 'MOON', zodiacSystem).longitude;
+            const midPlanet = calcSinglePlanet(mid, pid, zodiacSystem).longitude;
             const midOrb = aspectOrb(midMoon, midPlanet, exactAngle);
             if (prevOrb < 0 ? midOrb < 0 : midOrb >= 0) {
               lo = mid;
@@ -154,7 +154,7 @@ export function findLastExactAspect(segStart: number, segEnd: number): AspectHit
   return latestHit;
 }
 
-export function calculateVocPeriods(year: number, month: number): VocMoonPeriod[] {
+export function calculateVocPeriods(year: number, month: number, zodiacSystem?: ZodiacSystem): VocMoonPeriod[] {
   // JD range: month +/- 3 day buffer
   const jdStart = toJulianDay(year, month, 1, 0) - 3;
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -164,7 +164,7 @@ export function calculateVocPeriods(year: number, month: number): VocMoonPeriod[
   const monthStart = toJulianDay(year, month, 1, 0);
   const monthEnd = toJulianDay(year, month, daysInMonth, 24);
 
-  const ingresses = findMoonIngresses(jdStart, jdEnd);
+  const ingresses = findMoonIngresses(jdStart, jdEnd, zodiacSystem);
   const periods: VocMoonPeriod[] = [];
 
   for (let i = 0; i < ingresses.length; i++) {
@@ -174,7 +174,7 @@ export function calculateVocPeriods(year: number, month: number): VocMoonPeriod[
     // Segment: from previous ingress (or jdStart) to this ingress
     const segStart = i > 0 ? ingresses[i - 1].jd : jdStart;
 
-    const lastAspect = findLastExactAspect(segStart, ingressJd);
+    const lastAspect = findLastExactAspect(segStart, ingressJd, zodiacSystem);
 
     if (lastAspect) {
       const vocStart = lastAspect.jd;
