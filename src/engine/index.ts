@@ -545,8 +545,10 @@ export function calculateEphemeris(params: {
   year: number;
   month: number;
   enabledPlanets?: PlanetId[];
+  zodiacSystem?: ZodiacSystem;
 }): EphemerisData {
   const { year, month } = params;
+  const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
   const daysInMonth = new Date(year, month, 0).getDate();
 
   const dailyPositions: PlanetPosition[][] = [];
@@ -557,7 +559,7 @@ export function calculateEphemeris(params: {
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     dates.push(dateStr);
     const jd = toJulianDay(year, month, day, 12);
-    dailyPositions.push(calcPlanets(jd, params.enabledPlanets));
+    dailyPositions.push(calcPlanets(jd, params.enabledPlanets, zodiac));
   }
 
   // Detect events by comparing consecutive days
@@ -644,8 +646,9 @@ export function calculateEphemeris(params: {
 export function calculateVocMoon(params: {
   year: number;
   month: number;
+  zodiacSystem?: ZodiacSystem;
 }): VocMoonData {
-  const periods = calculateVocPeriods(params.year, params.month);
+  const periods = calculateVocPeriods(params.year, params.month, params.zodiacSystem ?? 'tropical');
   return {
     year: params.year,
     month: params.month,
