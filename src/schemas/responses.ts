@@ -221,6 +221,11 @@ export const TransitEventsDataSchema = z.object({
     days: z.number().int(),
   }),
   events: z.array(TransitEventSchema),
+  context: z.object({
+    sunSignAtStart: SignNameEnum,
+    sunNatalHouseAtStart: z.number().int().min(1).max(12).nullable(),
+    sunHemisphereAtStart: z.enum(['upper', 'lower']).nullable(),
+  }),
   meta: z.object({
     schemaVersion: z.number(),
     calculatedAt: z.string(),

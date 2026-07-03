@@ -75,11 +75,60 @@ describe('calculateTransitEvents — 365-day window', () => {
     }
   });
 
-  it('never samples SUN or MOON as transiting bodies', () => {
+  it('long window: Sun makes only conj/opp to core points; Moon and fast movers make no aspects', () => {
+    const CORE = new Set([
+      'SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO',
+      'ASC', 'MC',
+    ]);
     for (const e of yearResult.events) {
-      expect(e.transiting).not.toBe('SUN');
       expect(e.transiting).not.toBe('MOON');
+      if (e.kind === 'NATAL_ASPECT') {
+        // Fast movers are excluded from aspects in long windows (yearly noise).
+        expect(['MERCURY', 'VENUS', 'MARS']).not.toContain(e.transiting);
+        // The Sun's long-window contribution: once-a-year conj/opp to the ten
+        // classical points + angles only (no asteroids/nodes inflating it).
+        if (e.transiting === 'SUN') {
+          expect(['CONJUNCTION', 'OPPOSITION']).toContain(e.aspectType);
+          expect(CORE.has(e.natal)).toBe(true);
+        }
+      }
     }
+  });
+
+  it('exposes structural context: Sun sign/house/hemisphere at window start', () => {
+    expect(yearResult.context.sunSignAtStart).toMatch(/^[A-Z]{3}$/);
+    // Birth time known → house + hemisphere resolve.
+    const h = yearResult.context.sunNatalHouseAtStart;
+    expect(h).not.toBeNull();
+    expect(h!).toBeGreaterThanOrEqual(1);
+    expect(h!).toBeLessThanOrEqual(12);
+    expect(yearResult.context.sunHemisphereAtStart).toBe(h! >= 7 ? 'upper' : 'lower');
+  });
+});
+
+describe('calculateTransitEvents — 30-day (short) window', () => {
+  let monthResult: TransitEventsData;
+  beforeAll(() => {
+    monthResult = calculateTransitEvents({
+      ...base,
+      startDate: '2026-01-01',
+      endDate: '2026-01-31',
+    });
+  });
+
+  it('reports a 31-day window with events', () => {
+    expect(monthResult.window.days).toBe(31);
+    expect(monthResult.events.length).toBeGreaterThan(0);
+  });
+
+  it('lets fast movers (Sun/Mercury/Venus/Mars) drive the aspect calendar', () => {
+    const aspectTransiters = new Set(
+      monthResult.events.filter((e) => e.kind === 'NATAL_ASPECT').map((e) => e.transiting),
+    );
+    // Over a month the fast movers carry the signal; at least one must appear —
+    // the exact opposite of the long-window rule above.
+    expect(['SUN', 'MERCURY', 'VENUS', 'MARS'].some((p) => aspectTransiters.has(p))).toBe(true);
+    expect(aspectTransiters.has('MOON')).toBe(false);
   });
 });
 
@@ -170,5 +219,9 @@ describe('calculateTransitEvents — unknown birth time', () => {
         expect(e.natal).not.toBe('MC');
       }
     }
+    // Without houses, the Sun's house/hemisphere context is null but the sign remains.
+    expect(result.context.sunSignAtStart).toMatch(/^[A-Z]{3}$/);
+    expect(result.context.sunNatalHouseAtStart).toBeNull();
+    expect(result.context.sunHemisphereAtStart).toBeNull();
   });
 });

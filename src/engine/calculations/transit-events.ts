@@ -28,9 +28,35 @@ const OUTER_TRANSITERS: readonly PlanetId[] = [
   'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO',
 ];
 
+/** Fast movers whose exact natal aspects only carry signal in short windows. */
+const FAST_TRANSITERS: readonly PlanetId[] = ['MERCURY', 'VENUS', 'MARS'];
+
+/**
+ * The ten classical points. In long windows the transiting Sun's aspects are
+ * restricted to these (plus the angles) — otherwise it hits every asteroid and
+ * node twice a year, inflating the calendar far past the meaningful
+ * "Sun lights up each of your planets once a year" beats.
+ */
+const CORE_TARGET_PLANETS: readonly PlanetId[] = [
+  'SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO',
+];
+
 const MAJOR_ASPECT_ANGLES: readonly [TransitEventAspectType, number][] = [
   ['CONJUNCTION', 0], ['OPPOSITION', 180], ['TRINE', 120], ['SQUARE', 90], ['SEXTILE', 60],
 ];
+
+/** In long windows the transiting Sun contributes only its once-a-year exact hits. */
+const CONJ_OPP_ANGLES: readonly [TransitEventAspectType, number][] = [
+  ['CONJUNCTION', 0], ['OPPOSITION', 180],
+];
+
+/**
+ * Window-length boundary (inclusive, days) separating the two rule sets.
+ * At or below this, fast movers (Sun/Mercury/Venus/Mars) drive the calendar
+ * and contribute all major aspects. Above it, they are noise, so aspects come
+ * from the slow movers plus the Sun's conjunctions/oppositions only.
+ */
+const SHORT_WINDOW_MAX_DAYS = 60;
 
 /** Only brackets whose earlier-day |orb| is within this gate count as an exact hit. */
 const EXACT_ASPECT_GATE_DEG = 1.5;
@@ -97,26 +123,54 @@ export function computeTransitEvents(params: TransitEventsComputationParams): Tr
   const { natal, startDate, endDate } = params;
   const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
 
-  // CHIRON participates when the caller enabled it (default planet set includes it).
-  const chironEnabled = params.enabledPlanets ? params.enabledPlanets.includes('CHIRON') : true;
-  const sampleSet: PlanetId[] = chironEnabled ? [...STATION_TRANSITERS, 'CHIRON'] : [...STATION_TRANSITERS];
-  const slowSet = new Set<PlanetId>(chironEnabled ? [...OUTER_TRANSITERS, 'CHIRON'] : OUTER_TRANSITERS);
-  const stationSet = new Set<PlanetId>(STATION_TRANSITERS);
-
-  // Natal aspect targets: natal planets + ASC/MC when a birth time is known.
-  const natalTargets: { name: string; longitude: number }[] =
-    natal.planets.map((p) => ({ name: p.id, longitude: p.longitude }));
-  if (natal.angles) {
-    natalTargets.push({ name: 'ASC', longitude: natal.angles.asc });
-    natalTargets.push({ name: 'MC', longitude: natal.angles.mc });
-  }
-
-  // Daily sampling at noon UTC.
+  // Daily sampling at noon UTC. Compute the window length first — it selects
+  // which transiters and aspect angles are in play.
   const start = parseDateString(startDate);
   const end = parseDateString(endDate);
   const startJd = toJulianDay(start.year, start.month, start.day, 12);
   const endJd = toJulianDay(end.year, end.month, end.day, 12);
   const days = Math.round(endJd - startJd) + 1;
+  const isShortWindow = days <= SHORT_WINDOW_MAX_DAYS;
+
+  // CHIRON participates when the caller enabled it (default planet set includes it).
+  const chironEnabled = params.enabledPlanets ? params.enabledPlanets.includes('CHIRON') : true;
+
+  // Sampled daily: Sun always (theme spine + aspects), personal fast movers +
+  // outers (stations/ingresses), Chiron when enabled. Moon is never sampled —
+  // its rhythm belongs to the daily dashboard, not a windowed report.
+  const sampleSet: PlanetId[] = ['SUN', ...STATION_TRANSITERS];
+  if (chironEnabled) sampleSet.push('CHIRON');
+
+  // Stations: unchanged — the personal-through-outer movers that can retrograde.
+  const stationSet = new Set<PlanetId>(STATION_TRANSITERS);
+
+  // Sign/house ingress: the Sun always (its monthly house transit is the
+  // report's backbone) and the outers/Chiron always; the fast movers only in
+  // short windows, where their ingresses are signal rather than yearly noise.
+  const ingressSet = new Set<PlanetId>(['SUN', ...OUTER_TRANSITERS]);
+  if (chironEnabled) ingressSet.add('CHIRON');
+  if (isShortWindow) for (const p of FAST_TRANSITERS) ingressSet.add(p);
+
+  // Exact natal aspects, per transiter, with window-adaptive angle sets:
+  //  - outers (+Chiron): all major aspects, both windows (rare, durable)
+  //  - Sun: all majors in short windows, conjunction/opposition only in long
+  //  - fast movers (Mercury/Venus/Mars): all majors, short windows only
+  const aspectAnglesByPlanet = new Map<PlanetId, readonly [TransitEventAspectType, number][]>();
+  for (const p of OUTER_TRANSITERS) aspectAnglesByPlanet.set(p, MAJOR_ASPECT_ANGLES);
+  if (chironEnabled) aspectAnglesByPlanet.set('CHIRON', MAJOR_ASPECT_ANGLES);
+  aspectAnglesByPlanet.set('SUN', isShortWindow ? MAJOR_ASPECT_ANGLES : CONJ_OPP_ANGLES);
+  if (isShortWindow) for (const p of FAST_TRANSITERS) aspectAnglesByPlanet.set(p, MAJOR_ASPECT_ANGLES);
+
+  // Natal aspect targets: natal planets + ASC/MC when a birth time is known.
+  // `core` flags the ten classical points (+ angles) for the Sun's long-window
+  // target restriction.
+  const coreTargetSet = new Set<string>([...CORE_TARGET_PLANETS, 'ASC', 'MC']);
+  const natalTargets: { name: string; longitude: number; core: boolean }[] =
+    natal.planets.map((p) => ({ name: p.id, longitude: p.longitude, core: coreTargetSet.has(p.id) }));
+  if (natal.angles) {
+    natalTargets.push({ name: 'ASC', longitude: natal.angles.asc, core: true });
+    natalTargets.push({ name: 'MC', longitude: natal.angles.mc, core: true });
+  }
 
   const dates: string[] = [];
   const dailyPositions: PlanetPosition[][] = [];
@@ -153,40 +207,48 @@ export function computeTransitEvents(params: TransitEventsComputationParams): Tr
         }
       }
 
-      if (!slowSet.has(planet.id)) continue;
-
-      // Sign ingress: sign index change
-      if (planet.sign !== next.sign) {
-        events.push({
-          date, kind: 'SIGN_INGRESS', transiting: planet.id, sign: next.signName,
-          detail: `${planet.id} enters ${SIGN_FULL_NAMES[next.signName]}`,
-        });
-      }
-
-      // House ingress: natal-house index change (needs natal houses)
-      if (natal.houses) {
-        const houseToday = houseIndexForLongitude(planet.longitude, natal.houses);
-        const houseTomorrow = houseIndexForLongitude(next.longitude, natal.houses);
-        if (houseToday !== houseTomorrow) {
+      // Sign/house ingress for ingress-eligible transiters.
+      if (ingressSet.has(planet.id)) {
+        // Sign ingress: sign index change
+        if (planet.sign !== next.sign) {
           events.push({
-            date, kind: 'HOUSE_INGRESS', transiting: planet.id, house: houseTomorrow,
-            detail: `${planet.id} enters natal house ${houseTomorrow}`,
+            date, kind: 'SIGN_INGRESS', transiting: planet.id, sign: next.signName,
+            detail: `${planet.id} enters ${SIGN_FULL_NAMES[next.signName]}`,
           });
+        }
+
+        // House ingress: natal-house index change (needs natal houses)
+        if (natal.houses) {
+          const houseToday = houseIndexForLongitude(planet.longitude, natal.houses);
+          const houseTomorrow = houseIndexForLongitude(next.longitude, natal.houses);
+          if (houseToday !== houseTomorrow) {
+            events.push({
+              date, kind: 'HOUSE_INGRESS', transiting: planet.id, house: houseTomorrow,
+              detail: `${planet.id} enters natal house ${houseTomorrow}`,
+            });
+          }
         }
       }
 
-      // Exact natal aspects: signed-orb zero crossing with ±1.5° gate
-      for (const target of natalTargets) {
-        for (const [aspectType, exactAngle] of MAJOR_ASPECT_ANGLES) {
-          for (const shifted of shiftedAnglesFor(exactAngle)) {
-            const orbToday = signedAspectOrb(planet.longitude, target.longitude, shifted);
-            const orbTomorrow = signedAspectOrb(next.longitude, target.longitude, shifted);
-            if (Math.abs(orbToday) <= EXACT_ASPECT_GATE_DEG && orbToday * orbTomorrow < 0) {
-              events.push({
-                date, kind: 'NATAL_ASPECT', transiting: planet.id,
-                natal: target.name, aspectType,
-                detail: `${planet.id} ${aspectType} natal ${target.name}`,
-              });
+      // Exact natal aspects: signed-orb zero crossing with ±1.5° gate, using
+      // this transiter's window-adaptive angle set (absent = no aspects).
+      const aspectAngles = aspectAnglesByPlanet.get(planet.id);
+      if (aspectAngles) {
+        // Long-window Sun aspects hit only the ten classical points + angles.
+        const coreTargetsOnly = planet.id === 'SUN' && !isShortWindow;
+        for (const target of natalTargets) {
+          if (coreTargetsOnly && !target.core) continue;
+          for (const [aspectType, exactAngle] of aspectAngles) {
+            for (const shifted of shiftedAnglesFor(exactAngle)) {
+              const orbToday = signedAspectOrb(planet.longitude, target.longitude, shifted);
+              const orbTomorrow = signedAspectOrb(next.longitude, target.longitude, shifted);
+              if (Math.abs(orbToday) <= EXACT_ASPECT_GATE_DEG && orbToday * orbTomorrow < 0) {
+                events.push({
+                  date, kind: 'NATAL_ASPECT', transiting: planet.id,
+                  natal: target.name, aspectType,
+                  detail: `${planet.id} ${aspectType} natal ${target.name}`,
+                });
+              }
             }
           }
         }
@@ -217,9 +279,23 @@ export function computeTransitEvents(params: TransitEventsComputationParams): Tr
     finalEvents = events.filter((e) => e.kind !== 'NATAL_ASPECT' || keptAspects.has(e));
   }
 
+  // Structural context: where the transiting Sun sits at the window start, so
+  // even a near-empty event list still gives a report its "theme" backbone.
+  const sunAtStart = dailyPositions[0]?.find((p) => p.id === 'SUN');
+  const sunNatalHouseAtStart =
+    sunAtStart && natal.houses ? houseIndexForLongitude(sunAtStart.longitude, natal.houses) : null;
+  const context = {
+    sunSignAtStart: (sunAtStart?.signName ?? natal.planets.find((p) => p.id === 'SUN')?.signName ?? 'ARI') as SignName,
+    sunNatalHouseAtStart,
+    // Houses 7–12 are above the horizon (outward-facing), 1–6 below (inward).
+    sunHemisphereAtStart:
+      sunNatalHouseAtStart === null ? null : sunNatalHouseAtStart >= 7 ? ('upper' as const) : ('lower' as const),
+  };
+
   return {
     window: { startDate, endDate, days },
     events: finalEvents,
+    context,
     meta: {
       schemaVersion: SCHEMA_VERSION,
       calculatedAt: new Date().toISOString(),

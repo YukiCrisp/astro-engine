@@ -172,6 +172,16 @@ export type TransitEvent =
 export interface TransitEventsData {
   window: { startDate: string; endDate: string; days: number };
   events: TransitEvent[];
+  /**
+   * Always-present structural context so a report has a spine even when the
+   * event list is thin: where the transiting Sun sits at the window start.
+   * House/hemisphere are null when birth time (and thus houses) is unknown.
+   */
+  context: {
+    sunSignAtStart: SignName;
+    sunNatalHouseAtStart: number | null;
+    sunHemisphereAtStart: 'upper' | 'lower' | null;
+  };
   meta: {
     schemaVersion: number;
     calculatedAt: string;
