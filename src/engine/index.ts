@@ -7,7 +7,7 @@ import { findSolarReturnJD } from './calculations/solar-return.js';
 import { findLunarReturnJD, listLunarReturnsInYear } from './calculations/lunar-return.js';
 import { midpointLongitude } from './calculations/composite.js';
 import { calculateVocPeriods } from './calculations/voc-moon.js';
-import { computeTransitEvents, signedAspectOrb } from './calculations/transit-events.js';
+import { computeTransitEvents, shiftedAnglesFor, signedAspectOrb } from './calculations/transit-events.js';
 import { analyzeChart } from './calculations/chart-analysis.js';
 import type { ChartAnalysis } from './calculations/chart-analysis.js';
 import { detectAspectPatterns } from './calculations/aspect-patterns.js';
@@ -611,17 +611,19 @@ export function calculateEphemeris(params: {
         if (!tomorrowA || !tomorrowB) continue;
 
         for (const [aspectType, exactAngle] of MAJOR_ASPECT_ANGLES) {
-          const orbToday = signedAspectOrb(todayA.longitude, todayB.longitude, exactAngle);
-          const orbTomorrow = signedAspectOrb(tomorrowA.longitude, tomorrowB.longitude, exactAngle);
-          if (Math.abs(orbToday) <= 1.5 && orbToday * orbTomorrow < 0) {
-            events.push({
-              date,
-              type: 'EXACT_ASPECT',
-              planet: todayA.id,
-              detail: `${todayA.id} ${aspectType} ${todayB.id}`,
-              targetPlanet: todayB.id,
-              aspectType,
-            });
+          for (const shifted of shiftedAnglesFor(exactAngle)) {
+            const orbToday = signedAspectOrb(todayA.longitude, todayB.longitude, shifted);
+            const orbTomorrow = signedAspectOrb(tomorrowA.longitude, tomorrowB.longitude, shifted);
+            if (Math.abs(orbToday) <= 1.5 && orbToday * orbTomorrow < 0) {
+              events.push({
+                date,
+                type: 'EXACT_ASPECT',
+                planet: todayA.id,
+                detail: `${todayA.id} ${aspectType} ${todayB.id}`,
+                targetPlanet: todayB.id,
+                aspectType,
+              });
+            }
           }
         }
       }

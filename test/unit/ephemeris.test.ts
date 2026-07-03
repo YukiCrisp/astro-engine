@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { initSweph } from '../../src/engine/sweph-adapter.js';
 import { calculateEphemeris, calculateVocMoon } from '../../src/engine/index.js';
+import { signedAspectOrb } from '../../src/engine/calculations/transit-events.js';
 
 beforeAll(() => {
   initSweph('./ephe');
@@ -52,6 +53,68 @@ describe('calculateEphemeris zodiacSystem threading (ENGA-1261)', () => {
     const tKeys = tropical.events.filter((e) => e.type === 'INGRESS').map((e) => `${e.date}:${e.detail}`);
     const sKeys = sidereal.events.filter((e) => e.type === 'INGRESS').map((e) => `${e.date}:${e.detail}`);
     expect(sKeys).not.toEqual(tKeys);
+  });
+});
+
+describe('calculateEphemeris EXACT_ASPECT detects both geometries of asymmetric aspects', () => {
+  // Asymmetric aspects (sextile/square/trine) are exact at separations of both
+  // +angle and 360-angle. January 2025 contains exact hits in both geometries.
+  const eph = () => calculateEphemeris({ year: 2025, month: 1 });
+
+  it('detects the forward geometry (A ahead of B by the exact angle)', () => {
+    // Mars trine Neptune, exact 2025-01-13, separation ≈ +120°.
+    expect(eph().events).toContainEqual(expect.objectContaining({
+      type: 'EXACT_ASPECT', date: '2025-01-13',
+      planet: 'MARS', targetPlanet: 'NEPTUNE', aspectType: 'TRINE',
+    }));
+  });
+
+  it('detects the reverse geometry (A behind B, separation 360 - angle)', () => {
+    // Sun trine Uranus, exact 2025-01-13, separation ≈ 240° (= 360 - 120).
+    expect(eph().events).toContainEqual(expect.objectContaining({
+      type: 'EXACT_ASPECT', date: '2025-01-13',
+      planet: 'SUN', targetPlanet: 'URANUS', aspectType: 'TRINE',
+    }));
+  });
+
+  it('reports every zero-crossing derivable from the returned daily positions', () => {
+    // Self-consistency: re-derive expected hits from `days` using the
+    // both-sides rule and require each one to appear in `events`.
+    const data = eph();
+    const SLOW = new Set(['SUN', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO']);
+    const ANGLES: [string, number][] = [
+      ['CONJUNCTION', 0], ['OPPOSITION', 180], ['TRINE', 120], ['SQUARE', 90], ['SEXTILE', 60],
+    ];
+    let expected = 0;
+    for (let i = 0; i < data.days.length - 1; i++) {
+      const today = data.days[i].planets;
+      const tomorrow = data.days[i + 1].planets;
+      for (let a = 0; a < today.length; a++) {
+        if (!SLOW.has(today[a].id)) continue;
+        for (let b = a + 1; b < today.length; b++) {
+          if (!SLOW.has(today[b].id)) continue;
+          const tA = tomorrow.find((p) => p.id === today[a].id);
+          const tB = tomorrow.find((p) => p.id === today[b].id);
+          if (!tA || !tB) continue;
+          for (const [aspectType, angle] of ANGLES) {
+            const shiftedAngles = angle === 0 || angle === 180 ? [angle] : [angle, 360 - angle];
+            for (const shifted of shiftedAngles) {
+              const o1 = signedAspectOrb(today[a].longitude, today[b].longitude, shifted);
+              const o2 = signedAspectOrb(tA.longitude, tB.longitude, shifted);
+              if (Math.abs(o1) <= 1.5 && o1 * o2 < 0) {
+                expected++;
+                expect(data.events).toContainEqual(expect.objectContaining({
+                  type: 'EXACT_ASPECT', date: data.days[i + 1].date,
+                  planet: today[a].id, targetPlanet: today[b].id, aspectType,
+                }));
+              }
+            }
+          }
+        }
+      }
+    }
+    // The month genuinely exercises the detector in both geometries.
+    expect(expected).toBeGreaterThan(10);
   });
 });
 

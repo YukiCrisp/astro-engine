@@ -71,7 +71,7 @@ function houseIndexForLongitude(longitude: number, houses: HouseCusp[]): number 
  * so both shifted angles must be checked to catch the transiting body
  * approaching the natal point from either side.
  */
-function shiftedAnglesFor(exactAngle: number): number[] {
+export function shiftedAnglesFor(exactAngle: number): number[] {
   return exactAngle === 0 || exactAngle === 180 ? [exactAngle] : [exactAngle, 360 - exactAngle];
 }
 
