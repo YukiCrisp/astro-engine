@@ -10,11 +10,13 @@ interface CacheOptions {
   maxSize?: number;
   natalTtlMs?: number;
   transitTtlMs?: number;
+  transitEventsTtlMs?: number;
 }
 
 const DEFAULT_MAX_SIZE = 1000;
 const DEFAULT_NATAL_TTL_MS = 86_400_000; // 24h
 const DEFAULT_TRANSIT_TTL_MS = 3_600_000; // 1h
+const DEFAULT_TRANSIT_EVENTS_TTL_MS = 86_400_000; // 24h — window calendars are date-based, not moment-based
 
 export class ChartCache {
   private map = new Map<string, CacheEntry<unknown>>();
@@ -24,11 +26,13 @@ export class ChartCache {
 
   readonly natalTtlMs: number;
   readonly transitTtlMs: number;
+  readonly transitEventsTtlMs: number;
 
   constructor(options?: CacheOptions) {
     this.maxSize = options?.maxSize ?? DEFAULT_MAX_SIZE;
     this.natalTtlMs = options?.natalTtlMs ?? DEFAULT_NATAL_TTL_MS;
     this.transitTtlMs = options?.transitTtlMs ?? DEFAULT_TRANSIT_TTL_MS;
+    this.transitEventsTtlMs = options?.transitEventsTtlMs ?? DEFAULT_TRANSIT_EVENTS_TTL_MS;
   }
 
   get<T>(key: string): T | undefined {

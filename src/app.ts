@@ -9,6 +9,7 @@ import { healthRoute } from './routes/health.js';
 import { natalRoute } from './routes/natal.js';
 import { progressedRoute } from './routes/progressed.js';
 import { transitRoute } from './routes/transit.js';
+import { transitEventsRoute } from './routes/transit-events.js';
 import { tripleRoute } from './routes/triple.js';
 import { synastryRoute } from './routes/synastry.js';
 import { compositeRoute } from './routes/composite.js';
@@ -82,6 +83,7 @@ export async function buildApp() {
   await app.register(natalAnalysisRoute);
   await app.register(progressedRoute);
   await app.register(transitRoute);
+  await app.register(transitEventsRoute);
   await app.register(tripleRoute);
   await app.register(synastryRoute);
   await app.register(compositeRoute);

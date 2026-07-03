@@ -7,6 +7,7 @@ import { findSolarReturnJD } from './calculations/solar-return.js';
 import { findLunarReturnJD, listLunarReturnsInYear } from './calculations/lunar-return.js';
 import { midpointLongitude } from './calculations/composite.js';
 import { calculateVocPeriods } from './calculations/voc-moon.js';
+import { computeTransitEvents, signedAspectOrb } from './calculations/transit-events.js';
 import { analyzeChart } from './calculations/chart-analysis.js';
 import type { ChartAnalysis } from './calculations/chart-analysis.js';
 import { detectAspectPatterns } from './calculations/aspect-patterns.js';
@@ -20,7 +21,7 @@ import { SCHEMA_VERSION } from './types.js';
 import type {
   NatalChartData, HouseSystem, ZodiacSystem, TripleChartData,
   SynastryChartData, CompositeTransitChartData, EphemerisData, EphemerisEvent,
-  VocMoonData, AstromapData,
+  VocMoonData, AstromapData, TransitEventsData,
   PlanetId, PlanetPosition, AspectType, SignName,
 } from './types.js';
 
@@ -533,14 +534,6 @@ const MAJOR_ASPECT_ANGLES: [AspectType, number][] = [
   ['CONJUNCTION', 0], ['OPPOSITION', 180], ['TRINE', 120], ['SQUARE', 90], ['SEXTILE', 60],
 ];
 
-/** Signed orb that crosses zero at the exact aspect for all aspect types. */
-function signedAspectOrb(longA: number, longB: number, exactAngle: number): number {
-  const shiftedB = (longB + exactAngle) % 360;
-  let diff = longA - shiftedB;
-  diff = ((diff % 360) + 540) % 360 - 180;
-  return diff;
-}
-
 export function calculateEphemeris(params: {
   year: number;
   month: number;
@@ -641,6 +634,39 @@ export function calculateEphemeris(params: {
     events,
     meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString() },
   };
+}
+
+/**
+ * Calendar of transit events (exact natal aspects, stations, sign/house
+ * ingresses) over a date window of up to 366 days. Computes the natal chart
+ * once, then delegates to the daily-sampling detector in
+ * calculations/transit-events.ts.
+ */
+export function calculateTransitEvents(params: {
+  birthDate: string; birthTime: string | null;
+  lat: number; lon: number;
+  utcOffsetMinutes: number; houseSystem: HouseSystem;
+  zodiacSystem?: ZodiacSystem;
+  enabledPlanets?: PlanetId[];
+  startDate: string; endDate: string;
+}): TransitEventsData {
+  const natal = calculateNatal({
+    birthDate: params.birthDate,
+    birthTime: params.birthTime,
+    lat: params.lat,
+    lon: params.lon,
+    utcOffsetMinutes: params.utcOffsetMinutes,
+    houseSystem: params.houseSystem,
+    zodiacSystem: params.zodiacSystem,
+    enabledPlanets: params.enabledPlanets,
+  });
+  return computeTransitEvents({
+    natal,
+    startDate: params.startDate,
+    endDate: params.endDate,
+    zodiacSystem: params.zodiacSystem,
+    enabledPlanets: params.enabledPlanets,
+  });
 }
 
 export function calculateVocMoon(params: {

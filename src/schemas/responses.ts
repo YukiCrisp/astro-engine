@@ -172,6 +172,63 @@ export const EphemerisDataSchema = z.object({
   }),
 });
 
+// --- Transit events (window calendar for AI report generation) ---
+
+const SignNameEnum = z.enum(['ARI', 'TAU', 'GEM', 'CAN', 'LEO', 'VIR', 'LIB', 'SCO', 'SAG', 'CAP', 'AQU', 'PIS']);
+const TransitEventAspectTypeEnum = z.enum(['CONJUNCTION', 'OPPOSITION', 'TRINE', 'SQUARE', 'SEXTILE']);
+
+const TransitEventSchema = z.discriminatedUnion('kind', [
+  z.object({
+    date: z.string(),
+    kind: z.literal('NATAL_ASPECT'),
+    transiting: PlanetIdEnum,
+    natal: z.string().describe("PlanetId or 'ASC' | 'MC'"),
+    aspectType: TransitEventAspectTypeEnum,
+    detail: z.string(),
+  }),
+  z.object({
+    date: z.string(),
+    kind: z.literal('STATION_RETROGRADE'),
+    transiting: PlanetIdEnum,
+    detail: z.string(),
+  }),
+  z.object({
+    date: z.string(),
+    kind: z.literal('STATION_DIRECT'),
+    transiting: PlanetIdEnum,
+    detail: z.string(),
+  }),
+  z.object({
+    date: z.string(),
+    kind: z.literal('SIGN_INGRESS'),
+    transiting: PlanetIdEnum,
+    sign: SignNameEnum,
+    detail: z.string(),
+  }),
+  z.object({
+    date: z.string(),
+    kind: z.literal('HOUSE_INGRESS'),
+    transiting: PlanetIdEnum,
+    house: z.number().int().min(1).max(12),
+    detail: z.string(),
+  }),
+]);
+
+export const TransitEventsDataSchema = z.object({
+  window: z.object({
+    startDate: z.string(),
+    endDate: z.string(),
+    days: z.number().int(),
+  }),
+  events: z.array(TransitEventSchema),
+  meta: z.object({
+    schemaVersion: z.number(),
+    calculatedAt: z.string(),
+    truncated: z.boolean(),
+    totalDetected: z.number().int(),
+  }),
+});
+
 const VocMoonPeriodSchema = z.object({
   start: z.string(),
   end: z.string(),

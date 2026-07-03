@@ -27,6 +27,7 @@ All endpoints are versioned under `/v1/`:
 | POST | /v1/charts/natal/analysis | Natal chart with pattern analysis |
 | POST | /v1/charts/progressed | Secondary progressions |
 | POST | /v1/charts/transit | Transit chart |
+| POST | /v1/charts/transit-events | Transit event calendar over a date window (max 366 days) |
 | POST | /v1/charts/triple | Triple chart (natal + progressed + transit) |
 | POST | /v1/charts/synastry | Synastry (two natal charts + cross-aspects) |
 | POST | /v1/charts/composite | Composite chart (midpoint method) |
@@ -53,13 +54,14 @@ All endpoints are versioned under `/v1/`:
 | `fixed-stars.ts` | Major fixed star positions at a given Julian Day |
 | `chart-analysis.ts` | Chart pattern analysis (culminating/rising planet, distribution) |
 | `voc-moon.ts` | Void-of-course Moon period detection |
+| `transit-events.ts` | Windowed transit event detection (exact natal aspects, stations, sign/house ingresses) via daily sampling + adjacent-day bracketing |
 | `astrocartography.ts` | Astrocartography line computation (MC/IC closed-form, AC/DC via shared-`calcHouses` bisection) |
 
 ## Cache System (`src/engine/cache.ts`)
 
 LRU calculation cache to avoid redundant Swiss Ephemeris calls:
 - **Max entries:** 1000 (configurable)
-- **TTL:** 24h for natal/return charts, 1h for transit charts
+- **TTL:** 24h for natal/return charts, 1h for transit charts, 24h for transit-event windows
 - **Cache key:** SHA-256 hash of sorted request parameters
 - **API:** `chartCache.getOrSet(key, compute, ttl)` -- all route handlers use this
 - **Management:** `GET /v1/cache/stats`, `POST /v1/cache/clear`

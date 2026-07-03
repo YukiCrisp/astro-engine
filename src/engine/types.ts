@@ -155,6 +155,31 @@ export interface EphemerisData {
   };
 }
 
+/** Major aspects considered for transit-to-natal exact hits. */
+export type TransitEventAspectType = 'CONJUNCTION' | 'OPPOSITION' | 'TRINE' | 'SQUARE' | 'SEXTILE';
+
+export type TransitEvent =
+  | {
+      date: string; kind: 'NATAL_ASPECT'; transiting: PlanetId;
+      /** PlanetId or 'ASC' | 'MC' */
+      natal: string;
+      aspectType: TransitEventAspectType; detail: string;
+    }
+  | { date: string; kind: 'STATION_RETROGRADE' | 'STATION_DIRECT'; transiting: PlanetId; detail: string }
+  | { date: string; kind: 'SIGN_INGRESS'; transiting: PlanetId; sign: SignName; detail: string }
+  | { date: string; kind: 'HOUSE_INGRESS'; transiting: PlanetId; house: number; detail: string };
+
+export interface TransitEventsData {
+  window: { startDate: string; endDate: string; days: number };
+  events: TransitEvent[];
+  meta: {
+    schemaVersion: number;
+    calculatedAt: string;
+    truncated: boolean;
+    totalDetected: number;
+  };
+}
+
 export interface VocMoonPeriod {
   start: string;
   end: string;
