@@ -137,6 +137,15 @@ export type EphemerisEventType = 'INGRESS' | 'STATION_RETROGRADE' | 'STATION_DIR
 
 export interface EphemerisEvent {
   date: string;
+  /**
+   * Exact instant the event becomes true (ingress reaches 0° of the new sign,
+   * station speed hits zero, aspect orb crosses exact), as a UTC ISO-8601
+   * timestamp (`YYYY-MM-DDTHH:MM:SSZ`). The daily engine samples at noon UTC and
+   * records `date` as the later bracket day; `time` refines that bracket to the
+   * true moment via root-finding. Optional so the field is additive — older
+   * clients ignore it and keep the all-day behavior (no schema-version bump).
+   */
+  time?: string;
   type: EphemerisEventType;
   planet: PlanetId;
   detail: string;

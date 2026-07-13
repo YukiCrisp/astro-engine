@@ -16,7 +16,7 @@ import { calculateArabicParts } from './calculations/arabic-parts.js';
 import type { ArabicPartId } from './calculations/arabic-parts.js';
 import { calculateFixedStars } from './calculations/fixed-stars.js';
 import { computeAstromapLines, computeAstromapParans, ASTROMAP_PLANETS } from './calculations/astrocartography.js';
-import { buildJulianDay, toJulianDay, parseDateString } from '../utils/date.js';
+import { buildJulianDay, toJulianDay, fromJulianDay, parseDateString } from '../utils/date.js';
 import { SCHEMA_VERSION } from './types.js';
 import type {
   NatalChartData, HouseSystem, ZodiacSystem, TripleChartData,
@@ -534,6 +534,48 @@ const MAJOR_ASPECT_ANGLES: [AspectType, number][] = [
   ['CONJUNCTION', 0], ['OPPOSITION', 180], ['TRINE', 120], ['SQUARE', 90], ['SEXTILE', 60],
 ];
 
+/** Normalize a degree difference to the half-open range (-180, 180]. */
+function norm180(deg: number): number {
+  return ((deg % 360) + 540) % 360 - 180;
+}
+
+/**
+ * Refine the exact instant of an ephemeris event by bisecting a sign-changing
+ * scalar `f` over the noon-to-noon bracket `[jdLo, jdHi]` that produced it.
+ * Every event is detected as a state change between two noon-UTC samples, so its
+ * root is always bracketed (`f(jdLo)` and `f(jdHi)` differ in sign); this walks
+ * that bracket down to ~1-minute precision — far tighter than the 1-hour display
+ * rounding the calendar needs. Returns the JD of the crossing.
+ */
+function refineEventJd(f: (jd: number) => number, jdLo: number, jdHi: number): number {
+  let lo = jdLo;
+  let hi = jdHi;
+  let fLo = f(lo);
+  const TOLERANCE_JD = 1 / 1440; // one minute
+  for (let i = 0; i < 24 && hi - lo > TOLERANCE_JD; i++) {
+    const mid = (lo + hi) / 2;
+    const fMid = f(mid);
+    if (fMid === 0) return mid;
+    if ((fLo < 0) === (fMid < 0)) {
+      lo = mid;
+      fLo = fMid;
+    } else {
+      hi = mid;
+    }
+  }
+  return (lo + hi) / 2;
+}
+
+/** Ecliptic longitude of a single body at `jd` (one sweph call). */
+function longitudeAt(jd: number, id: PlanetId, zodiac: ZodiacSystem): number {
+  return calcPlanets(jd, [id], zodiac)[0].longitude;
+}
+
+/** Signed ecliptic speed of a single body at `jd` (one sweph call). */
+function speedAt(jd: number, id: PlanetId, zodiac: ZodiacSystem): number {
+  return calcPlanets(jd, [id], zodiac)[0].speed;
+}
+
 export function calculateEphemeris(params: {
   year: number;
   month: number;
@@ -546,12 +588,14 @@ export function calculateEphemeris(params: {
 
   const dailyPositions: PlanetPosition[][] = [];
   const dates: string[] = [];
+  const jds: number[] = [];
 
   // Calculate positions for each day at noon UTC
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     dates.push(dateStr);
     const jd = toJulianDay(year, month, day, 12);
+    jds.push(jd);
     dailyPositions.push(calcPlanets(jd, params.enabledPlanets, zodiac));
   }
 
@@ -562,6 +606,8 @@ export function calculateEphemeris(params: {
     const today = dailyPositions[i];
     const tomorrow = dailyPositions[i + 1];
     const date = dates[i + 1]; // event occurs on the later day
+    const jdToday = jds[i];
+    const jdTomorrow = jds[i + 1];
 
     for (const planet of today) {
       const next = tomorrow.find((p) => p.id === planet.id);
@@ -569,8 +615,18 @@ export function calculateEphemeris(params: {
 
       // Ingress: sign changes
       if (planet.sign !== next.sign) {
+        // The shared boundary is the 30°-multiple between the two signs: the new
+        // sign's start when moving forward, the old sign's start when retrograde.
+        const forward = (next.sign - planet.sign + 12) % 12 === 1;
+        const boundary = (forward ? next.sign : planet.sign) * 30;
+        const jdExact = refineEventJd(
+          (jd) => norm180(longitudeAt(jd, planet.id, zodiac) - boundary),
+          jdToday,
+          jdTomorrow,
+        );
         events.push({
           date,
+          time: fromJulianDay(jdExact),
           type: 'INGRESS',
           planet: planet.id,
           detail: `${planet.id} enters ${SIGN_NAMES_EPHEMERIS[next.sign]}`,
@@ -579,8 +635,14 @@ export function calculateEphemeris(params: {
 
       // Station retrograde: speed goes from positive to negative
       if (planet.speed >= 0 && next.speed < 0) {
+        const jdExact = refineEventJd(
+          (jd) => speedAt(jd, planet.id, zodiac),
+          jdToday,
+          jdTomorrow,
+        );
         events.push({
           date,
+          time: fromJulianDay(jdExact),
           type: 'STATION_RETROGRADE',
           planet: planet.id,
           detail: `${planet.id} stations retrograde`,
@@ -589,8 +651,14 @@ export function calculateEphemeris(params: {
 
       // Station direct: speed goes from negative to positive
       if (planet.speed < 0 && next.speed >= 0) {
+        const jdExact = refineEventJd(
+          (jd) => speedAt(jd, planet.id, zodiac),
+          jdToday,
+          jdTomorrow,
+        );
         events.push({
           date,
+          time: fromJulianDay(jdExact),
           type: 'STATION_DIRECT',
           planet: planet.id,
           detail: `${planet.id} stations direct`,
@@ -615,8 +683,18 @@ export function calculateEphemeris(params: {
             const orbToday = signedAspectOrb(todayA.longitude, todayB.longitude, shifted);
             const orbTomorrow = signedAspectOrb(tomorrowA.longitude, tomorrowB.longitude, shifted);
             if (Math.abs(orbToday) <= 1.5 && orbToday * orbTomorrow < 0) {
+              const jdExact = refineEventJd(
+                (jd) => signedAspectOrb(
+                  longitudeAt(jd, todayA.id, zodiac),
+                  longitudeAt(jd, todayB.id, zodiac),
+                  shifted,
+                ),
+                jdToday,
+                jdTomorrow,
+              );
               events.push({
                 date,
+                time: fromJulianDay(jdExact),
                 type: 'EXACT_ASPECT',
                 planet: todayA.id,
                 detail: `${todayA.id} ${aspectType} ${todayB.id}`,
