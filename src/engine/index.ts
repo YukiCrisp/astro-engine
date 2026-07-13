@@ -655,8 +655,12 @@ export function calculateEphemeris(params: {
         const orbToday = signedAspectOrb(sunToday.longitude, moonToday.longitude, exactAngle);
         const orbTomorrow = signedAspectOrb(sunTomorrow.longitude, moonTomorrow.longitude, exactAngle);
         if (orbToday * orbTomorrow < 0 && Math.abs(orbToday) < 90 && Math.abs(orbTomorrow) < 90) {
+          // Flag the noon closest to the exact instant (tie → later day) so the
+          // events list agrees with the moon-phase marks the client derives for
+          // the positions table (EphemerisTable.computeLunarEvents).
+          const lunationDate = Math.abs(orbToday) < Math.abs(orbTomorrow) ? dates[i] : date;
           events.push({
-            date,
+            date: lunationDate,
             type: 'EXACT_ASPECT',
             planet: 'SUN',
             detail: `SUN ${aspectType} MOON`,

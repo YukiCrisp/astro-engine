@@ -177,6 +177,25 @@ describe('calculateEphemeris detects lunations (new moon / full moon) — GH #23
     }
   });
 
+  it('dates each lunation on the noon closest to exact (agrees with the client moon-phase marks)', () => {
+    // Feb 2026: full moon 2026-02-01, new moon 2026-02-17 (astronomical).
+    const { sunMoon } = lunations(2026, 2);
+    expect(sunMoon).toContainEqual(expect.objectContaining({
+      type: 'EXACT_ASPECT', date: '2026-02-01',
+      planet: 'SUN', targetPlanet: 'MOON', aspectType: 'OPPOSITION',
+    }));
+    expect(sunMoon).toContainEqual(expect.objectContaining({
+      type: 'EXACT_ASPECT', date: '2026-02-17',
+      planet: 'SUN', targetPlanet: 'MOON', aspectType: 'CONJUNCTION',
+    }));
+  });
+
+  it('catches both full moons in a blue-moon month (May 2026)', () => {
+    const { sunMoon } = lunations(2026, 5);
+    const fullMoons = sunMoon.filter((e) => e.aspectType === 'OPPOSITION');
+    expect(fullMoons.map((e) => e.date)).toEqual(['2026-05-01', '2026-05-31']);
+  });
+
   it('limits Moon events to conjunction/opposition only (no Moon trine/square/sextile)', () => {
     const { data } = lunations(2026, 2);
     const moonAspects = data.events.filter(
