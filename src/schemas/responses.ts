@@ -154,6 +154,7 @@ const EphemerisDaySchema = z.object({
 
 const EphemerisEventSchema = z.object({
   date: z.string(),
+  time: z.string().optional(),
   type: z.enum(['INGRESS', 'STATION_RETROGRADE', 'STATION_DIRECT', 'EXACT_ASPECT']),
   planet: PlanetIdEnum,
   detail: z.string(),
