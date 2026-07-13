@@ -534,6 +534,15 @@ const MAJOR_ASPECT_ANGLES: [AspectType, number][] = [
   ['CONJUNCTION', 0], ['OPPOSITION', 180], ['TRINE', 120], ['SQUARE', 90], ['SEXTILE', 60],
 ];
 
+/**
+ * Lunations: the only Sun–Moon aspects surfaced in the ephemeris are the new
+ * moon (conjunction) and full moon (opposition) — per the feedback (GH #235),
+ * intentionally NOT the Moon's trine/square/sextile.
+ */
+const LUNATION_ANGLES: [AspectType, number][] = [
+  ['CONJUNCTION', 0], ['OPPOSITION', 180],
+];
+
 export function calculateEphemeris(params: {
   year: number;
   month: number;
@@ -625,6 +634,35 @@ export function calculateEphemeris(params: {
               });
             }
           }
+        }
+      }
+    }
+
+    // Lunations (new moon = Sun conjunct Moon, full moon = Sun oppose Moon).
+    // The Moon moves ~12–15°/day relative to the Sun, far too fast for the
+    // ±1.5° gate used by the slow-planet aspects above, so it gets a dedicated
+    // bracket: a sign change of the signed orb marks the crossing. `signedAspectOrb`
+    // wraps at ±180, so a crossing there would false-fire the OTHER lunation
+    // (conjunction at opposition time and vice versa); the |orb| < 90 guard on
+    // both samples keeps only genuine near-exact crossings (the Moon can never
+    // move 90° between noon samples, so a real crossing always clears it).
+    const sunToday = today.find((p) => p.id === 'SUN');
+    const moonToday = today.find((p) => p.id === 'MOON');
+    const sunTomorrow = tomorrow.find((p) => p.id === 'SUN');
+    const moonTomorrow = tomorrow.find((p) => p.id === 'MOON');
+    if (sunToday && moonToday && sunTomorrow && moonTomorrow) {
+      for (const [aspectType, exactAngle] of LUNATION_ANGLES) {
+        const orbToday = signedAspectOrb(sunToday.longitude, moonToday.longitude, exactAngle);
+        const orbTomorrow = signedAspectOrb(sunTomorrow.longitude, moonTomorrow.longitude, exactAngle);
+        if (orbToday * orbTomorrow < 0 && Math.abs(orbToday) < 90 && Math.abs(orbTomorrow) < 90) {
+          events.push({
+            date,
+            type: 'EXACT_ASPECT',
+            planet: 'SUN',
+            detail: `SUN ${aspectType} MOON`,
+            targetPlanet: 'MOON',
+            aspectType,
+          });
         }
       }
     }

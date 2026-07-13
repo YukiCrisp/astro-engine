@@ -118,6 +118,77 @@ describe('calculateEphemeris EXACT_ASPECT detects both geometries of asymmetric 
   });
 });
 
+describe('calculateEphemeris detects lunations (new moon / full moon) — GH #235', () => {
+  // Minimal angular distance between two longitudes, in [0, 180].
+  function separation(a: number, b: number): number {
+    const d = ((a - b) % 360 + 360) % 360;
+    return d > 180 ? 360 - d : d;
+  }
+
+  function lunations(year: number, month: number) {
+    const data = calculateEphemeris({ year, month });
+    const sunMoon = data.events.filter(
+      (e) => e.type === 'EXACT_ASPECT' && e.planet === 'SUN' && e.targetPlanet === 'MOON',
+    );
+    return { data, sunMoon };
+  }
+
+  function dayPositions(data: ReturnType<typeof calculateEphemeris>, date: string) {
+    const day = data.days.find((d) => d.date === date)!;
+    return {
+      sun: day.planets.find((p) => p.id === 'SUN')!,
+      moon: day.planets.find((p) => p.id === 'MOON')!,
+    };
+  }
+
+  it('emits a new moon (Sun conjunct Moon) with Sun≈Moon on the flagged day', () => {
+    const { data, sunMoon } = lunations(2026, 2);
+    const newMoons = sunMoon.filter((e) => e.aspectType === 'CONJUNCTION');
+    expect(newMoons.length).toBeGreaterThanOrEqual(1);
+    for (const e of newMoons) {
+      const { sun, moon } = dayPositions(data, e.date);
+      // Within one day of Moon motion (~15°) of an exact conjunction.
+      expect(separation(sun.longitude, moon.longitude)).toBeLessThan(15);
+    }
+  });
+
+  it('emits a full moon (Sun oppose Moon) with Sun≈Moon+180 on the flagged day', () => {
+    const { data, sunMoon } = lunations(2026, 2);
+    const fullMoons = sunMoon.filter((e) => e.aspectType === 'OPPOSITION');
+    expect(fullMoons.length).toBeGreaterThanOrEqual(1);
+    for (const e of fullMoons) {
+      const { sun, moon } = dayPositions(data, e.date);
+      expect(Math.abs(separation(sun.longitude, moon.longitude) - 180)).toBeLessThan(15);
+    }
+  });
+
+  it('never mislabels the ±180 orb wrap: conjunctions stay near 0°, oppositions near 180°', () => {
+    // Guards the fast-Moon detector against the signedAspectOrb wrap that would
+    // otherwise fire a conjunction at opposition time (and vice versa).
+    for (const month of [1, 2, 5, 8, 11]) {
+      const { data, sunMoon } = lunations(2026, month);
+      expect(sunMoon.length).toBeGreaterThan(0);
+      for (const e of sunMoon) {
+        const { sun, moon } = dayPositions(data, e.date);
+        const sep = separation(sun.longitude, moon.longitude);
+        if (e.aspectType === 'CONJUNCTION') expect(sep).toBeLessThan(15);
+        else expect(Math.abs(sep - 180)).toBeLessThan(15);
+      }
+    }
+  });
+
+  it('limits Moon events to conjunction/opposition only (no Moon trine/square/sextile)', () => {
+    const { data } = lunations(2026, 2);
+    const moonAspects = data.events.filter(
+      (e) => e.type === 'EXACT_ASPECT' && (e.planet === 'MOON' || e.targetPlanet === 'MOON'),
+    );
+    expect(moonAspects.length).toBeGreaterThan(0);
+    for (const e of moonAspects) {
+      expect(['CONJUNCTION', 'OPPOSITION']).toContain(e.aspectType);
+    }
+  });
+});
+
 describe('calculateVocMoon zodiacSystem threading (ENGA-1261)', () => {
   const year = 2026;
   const month = 2;
