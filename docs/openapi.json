@@ -3254,6 +3254,48 @@
                         ]
                       }
                     },
+                    "context": {
+                      "type": "object",
+                      "properties": {
+                        "sunSignAtStart": {
+                          "type": "string",
+                          "enum": [
+                            "ARI",
+                            "TAU",
+                            "GEM",
+                            "CAN",
+                            "LEO",
+                            "VIR",
+                            "LIB",
+                            "SCO",
+                            "SAG",
+                            "CAP",
+                            "AQU",
+                            "PIS"
+                          ]
+                        },
+                        "sunNatalHouseAtStart": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 12
+                        },
+                        "sunHemisphereAtStart": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "upper",
+                            "lower"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "sunSignAtStart",
+                        "sunNatalHouseAtStart",
+                        "sunHemisphereAtStart"
+                      ],
+                      "additionalProperties": false
+                    },
                     "meta": {
                       "type": "object",
                       "properties": {
@@ -3284,6 +3326,7 @@
                   "required": [
                     "window",
                     "events",
+                    "context",
                     "meta"
                   ],
                   "additionalProperties": false
@@ -8930,6 +8973,9 @@
                         "type": "object",
                         "properties": {
                           "date": {
+                            "type": "string"
+                          },
+                          "time": {
                             "type": "string"
                           },
                           "type": {
