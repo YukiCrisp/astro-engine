@@ -25,13 +25,22 @@ const PLANET_MAP: Record<PlanetId, number> = {
   VESTA: constants.SE_VESTA,
 };
 
+/**
+ * Canonical (traditional) display order. Every planets[] response follows this
+ * order regardless of the order of `enabledPlanets` in the request — client
+ * preference arrays are order-unstable (toggle history), so the engine owns it.
+ */
 const PLANET_IDS: PlanetId[] = [
   'SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS',
   'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO',
-  'TRUE_NODE', 'CHIRON',
+  'CHIRON', 'TRUE_NODE',
   'MEAN_NODE', 'MEAN_LILITH', 'TRUE_LILITH',
   'PHOLUS', 'CERES', 'PALLAS', 'JUNO', 'VESTA',
 ];
+
+const PLANET_ORDER: ReadonlyMap<PlanetId, number> = new Map(
+  PLANET_IDS.map((id, i) => [id, i]),
+);
 
 const SIGN_NAMES: readonly SignName[] = [
   'ARI', 'TAU', 'GEM', 'CAN', 'LEO', 'VIR',
@@ -116,7 +125,11 @@ export function epheFilesPresent(): boolean {
 }
 
 export function calcPlanets(jd: number, enabledPlanets?: PlanetId[], zodiacSystem?: ZodiacSystem): PlanetPosition[] {
-  const ids = enabledPlanets ?? PLANET_IDS;
+  const ids = enabledPlanets
+    ? [...enabledPlanets].sort(
+        (a, b) => (PLANET_ORDER.get(a) ?? 99) - (PLANET_ORDER.get(b) ?? 99),
+      )
+    : PLANET_IDS;
   const flags = calcFlagsForZodiac(zodiacSystem);
   return ids.flatMap((id): PlanetPosition[] => {
     if (EXTRA_EPHE_BODIES.has(id) && !extraEpheAvailable) return [];

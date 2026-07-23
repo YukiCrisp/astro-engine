@@ -49,3 +49,23 @@ describe('Einstein natal chart accuracy', () => {
     expect(planets.length).toBe(20);
   });
 });
+
+describe('planet ordering', () => {
+  const jd = buildJulianDay('1879-03-14', '11:30', 54);
+
+  it('returns the full list in traditional order (Sun first, Chiron before nodes)', () => {
+    const planets = calcPlanets(jd);
+    expect(planets.map(p => p.id)).toEqual([
+      'SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS',
+      'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO',
+      'CHIRON', 'TRUE_NODE',
+      'MEAN_NODE', 'MEAN_LILITH', 'TRUE_LILITH',
+      'PHOLUS', 'CERES', 'PALLAS', 'JUNO', 'VESTA',
+    ]);
+  });
+
+  it('normalizes enabledPlanets to traditional order regardless of request order', () => {
+    const planets = calcPlanets(jd, ['PLUTO', 'SUN', 'CHIRON', 'TRUE_NODE', 'MOON']);
+    expect(planets.map(p => p.id)).toEqual(['SUN', 'MOON', 'PLUTO', 'CHIRON', 'TRUE_NODE']);
+  });
+});
