@@ -1,5 +1,17 @@
 name: CI
-on: [push, pull_request]
+
+on:
+  # Feature branches are covered by pull_request. See the CI cost rule in the
+  # workspace CLAUDE.md before widening the push trigger past main.
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -9,6 +21,11 @@ jobs:
         with:
           node-version: '22'
       - uses: oven-sh/setup-bun@v2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
       - run: bun install --frozen-lockfile
       - run: sh scripts/download-ephe.sh
       - run: bun run build
