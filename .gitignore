@@ -5,5 +5,8 @@ ephe/
 APP_PLAN.md
 
 
+# worktrees
+/.worktrees/
+
 # macOS
 .DS_Store
