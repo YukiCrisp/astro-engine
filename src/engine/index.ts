@@ -117,22 +117,20 @@ export function calculateNatal(params: {
   zodiacSystem?: ZodiacSystem;
 } & EngineFilterParams): NatalChartData {
   const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
+  const birthTimeAssumed = params.birthTime === null;
   const jd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
   const planets = calcPlanets(jd, params.enabledPlanets, zodiac);
   const aspects = detectAspects(planets, 1, toAspectConfig(params));
 
-  if (params.birthTime === null) {
-    return {
-      planets, houses: null, angles: null, aspects,
-      meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd },
-    };
-  }
-
+  // Houses and angles are computed even when the birth time is unknown: the
+  // Julian day then rests on the local-noon assumption in `buildJulianDay`,
+  // and `meta.birthTimeAssumed` reports that so callers can label the result
+  // instead of silently reading it as measured (ENGA-2976, decision C).
   const { houses, angles } = calcHouses(jd, params.lat, params.lon, params.houseSystem, zodiac);
   computePartOfFortune(angles, planets);
   const result: NatalChartData = {
     planets, houses, angles, aspects,
-    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd },
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd, birthTimeAssumed },
   };
   if (params.enabledArabicParts && params.enabledArabicParts.length > 0 && houses) {
     result.arabicParts = computeArabicParts(angles, planets, houses, params.enabledArabicParts);
@@ -163,24 +161,19 @@ export function calculateProgressed(params: {
   relocatedLat?: number; relocatedLon?: number;
 } & EngineFilterParams): NatalChartData {
   const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
+  const birthTimeAssumed = params.birthTime === null;
   const jd = getProgressedJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes, params.progressedDate);
   const planets = calcPlanets(jd, params.enabledPlanets, zodiac);
   const aspects = detectAspects(planets, 1, toAspectConfig(params));
 
-  if (params.birthTime === null) {
-    return {
-      planets, houses: null, angles: null, aspects,
-      meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd },
-    };
-  }
-
+  // Same noon assumption as natal — see `calculateNatal`.
   const houseLat = params.relocatedLat ?? params.lat;
   const houseLon = params.relocatedLon ?? params.lon;
   const { houses, angles } = calcHouses(jd, houseLat, houseLon, params.houseSystem, zodiac);
   computePartOfFortune(angles, planets);
   return {
     planets, houses, angles, aspects,
-    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd },
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd, birthTimeAssumed },
   };
 }
 
@@ -195,10 +188,16 @@ export function calculateTransit(params: {
   const planets = calcPlanets(jd, params.enabledPlanets, zodiac);
   const aspects = detectAspects(planets, 1, toAspectConfig(params));
 
+  // A transit chart's moment is chosen by the caller, not recovered from birth
+  // data: when no time is given the request is "this date", not "this instant
+  // I cannot recall". ENGA-2976 (decision C) is about the unknown *birth* time,
+  // so this path keeps returning null houses/angles rather than inventing a
+  // rotation for a moment nobody asked about. The planets are still sampled at
+  // the assumed local noon, which `birthTimeAssumed` reports.
   if (params.transitTime === null) {
     return {
       planets, houses: null, angles: null, aspects,
-      meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd },
+      meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd, birthTimeAssumed: true },
     };
   }
 
@@ -206,7 +205,7 @@ export function calculateTransit(params: {
   computePartOfFortune(angles, planets);
   return {
     planets, houses, angles, aspects,
-    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd },
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd, birthTimeAssumed: false },
   };
 }
 
@@ -305,7 +304,14 @@ export function calculateComposite(params: {
   // applying has no meaning here.
   const aspects = detectAspects(planets, 1, toAspectConfig(filterParams), false);
 
-  if (chartA.angles && chartB.angles && params.personA.birthTime !== null && params.personB.birthTime !== null) {
+  // Either partner's unknown birth time taints the composite ASC/MC, so the
+  // flag is the OR of the two source charts (ENGA-2976). The birth times
+  // themselves are no longer gated on: since both source charts now carry
+  // noon-assumed angles, the composite midpoint is computable in every case
+  // and the caller is told how much of it rests on an assumption.
+  const birthTimeAssumed = chartA.meta.birthTimeAssumed || chartB.meta.birthTimeAssumed;
+
+  if (chartA.angles && chartB.angles) {
     const compositeAsc = midpointLongitude(chartA.angles.asc, chartB.angles.asc);
     const compositeMc = midpointLongitude(chartA.angles.mc, chartB.angles.mc);
 
@@ -338,10 +344,13 @@ export function calculateComposite(params: {
         houseSystem: params.personA.houseSystem,
         zodiacSystem: params.personA.zodiacSystem ?? 'tropical',
         julianDay: midJd,
+        birthTimeAssumed,
       },
     };
   }
 
+  // Defensive: `calculateNatal` always returns angles now, so this is only
+  // reachable if that ever changes again.
   return {
     planets, houses: null, angles: null, aspects,
     meta: {
@@ -350,6 +359,7 @@ export function calculateComposite(params: {
       houseSystem: params.personA.houseSystem,
       zodiacSystem: params.personA.zodiacSystem ?? 'tropical',
       julianDay: 0,
+      birthTimeAssumed,
     },
   };
 }
@@ -384,6 +394,7 @@ export function calculateSolarArc(params: {
   progressedDate: string;
 } & EngineFilterParams): NatalChartData {
   const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
+  const birthTimeAssumed = params.birthTime === null;
 
   // 1. Calculate the natal chart
   const natalJd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
@@ -401,20 +412,14 @@ export function calculateSolarArc(params: {
   const directedPlanets = calculateSolarArcPositions(natalPlanets, natalSun.longitude, progressedSun.longitude);
   const aspects = detectAspects(directedPlanets, 1, toAspectConfig(params));
 
-  if (params.birthTime === null) {
-    return {
-      planets: directedPlanets, houses: null, angles: null, aspects,
-      meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: natalJd },
-    };
-  }
-
-  // For houses, use natal houses (solar arc doesn't progress houses)
+  // For houses, use natal houses (solar arc doesn't progress houses).
+  // Same noon assumption as natal when the birth time is unknown.
   const { houses, angles } = calcHouses(natalJd, params.lat, params.lon, params.houseSystem, zodiac);
   computePartOfFortune(angles, directedPlanets);
 
   return {
     planets: directedPlanets, houses, angles, aspects,
-    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: natalJd },
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: natalJd, birthTimeAssumed },
   };
 }
 
@@ -455,6 +460,10 @@ export function calculateSolarReturn(params: {
       houseSystem: params.houseSystem,
       zodiacSystem: zodiac,
       julianDay: solarReturnJd,
+      // The return moment is solved from the natal Sun, which is itself taken
+      // at the assumed noon when the birth time is unknown — so the whole
+      // return chart (not just its houses) inherits the assumption.
+      birthTimeAssumed: params.birthTime === null,
     },
   };
 }
@@ -499,6 +508,9 @@ export function calculateLunarReturn(params: {
       houseSystem: params.houseSystem,
       zodiacSystem: zodiac,
       julianDay: lunarReturnJd,
+      // As with the solar return: an unknown birth time moves the natal Moon
+      // (~13°/day), and with it the solved return moment.
+      birthTimeAssumed: params.birthTime === null,
     },
   };
 }

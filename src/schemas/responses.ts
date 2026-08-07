@@ -83,6 +83,9 @@ export const NatalChartDataSchema = z.object({
     houseSystem: z.enum(['PLACIDUS', 'WHOLE_SIGN', 'KOCH', 'REGIOMONTANUS', 'CAMPANUS', 'EQUAL', 'PORPHYRY']),
     zodiacSystem: z.enum(['tropical', 'sidereal']).optional(),
     julianDay: z.number(),
+    birthTimeAssumed: z.boolean().describe(
+      'True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.',
+    ),
   }),
 });
 
@@ -230,6 +233,9 @@ export const TransitEventsDataSchema = z.object({
   meta: z.object({
     schemaVersion: z.number(),
     calculatedAt: z.string(),
+    birthTimeAssumed: z.boolean().describe(
+      "Mirrors the natal chart's `meta.birthTimeAssumed`. HOUSE_INGRESS events and `context.sunNatalHouseAtStart` / `sunHemisphereAtStart` come from the natal houses, so when this is true they rest on an assumed local noon rather than on a known birth time.",
+    ),
     truncated: z.boolean(),
     totalDetected: z.number().int(),
   }),
