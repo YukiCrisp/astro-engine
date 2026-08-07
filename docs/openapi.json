@@ -539,13 +539,18 @@
                         },
                         "julianDay": {
                           "type": "number"
+                        },
+                        "birthTimeAssumed": {
+                          "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
+                          "type": "boolean"
                         }
                       },
                       "required": [
                         "schemaVersion",
                         "calculatedAt",
                         "houseSystem",
-                        "julianDay"
+                        "julianDay",
+                        "birthTimeAssumed"
                       ],
                       "additionalProperties": false
                     }
@@ -1082,13 +1087,18 @@
                         },
                         "julianDay": {
                           "type": "number"
+                        },
+                        "birthTimeAssumed": {
+                          "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
+                          "type": "boolean"
                         }
                       },
                       "required": [
                         "schemaVersion",
                         "calculatedAt",
                         "houseSystem",
-                        "julianDay"
+                        "julianDay",
+                        "birthTimeAssumed"
                       ],
                       "additionalProperties": false
                     },
@@ -2013,13 +2023,18 @@
                         },
                         "julianDay": {
                           "type": "number"
+                        },
+                        "birthTimeAssumed": {
+                          "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
+                          "type": "boolean"
                         }
                       },
                       "required": [
                         "schemaVersion",
                         "calculatedAt",
                         "houseSystem",
-                        "julianDay"
+                        "julianDay",
+                        "birthTimeAssumed"
                       ],
                       "additionalProperties": false
                     },
@@ -2668,13 +2683,18 @@
                         },
                         "julianDay": {
                           "type": "number"
+                        },
+                        "birthTimeAssumed": {
+                          "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
+                          "type": "boolean"
                         }
                       },
                       "required": [
                         "schemaVersion",
                         "calculatedAt",
                         "houseSystem",
-                        "julianDay"
+                        "julianDay",
+                        "birthTimeAssumed"
                       ],
                       "additionalProperties": false
                     },
@@ -3305,6 +3325,10 @@
                         "calculatedAt": {
                           "type": "string"
                         },
+                        "birthTimeAssumed": {
+                          "description": "Mirrors the natal chart's `meta.birthTimeAssumed`. HOUSE_INGRESS events and `context.sunNatalHouseAtStart` / `sunHemisphereAtStart` come from the natal houses, so when this is true they rest on an assumed local noon rather than on a known birth time.",
+                          "type": "boolean"
+                        },
                         "truncated": {
                           "type": "boolean"
                         },
@@ -3317,6 +3341,7 @@
                       "required": [
                         "schemaVersion",
                         "calculatedAt",
+                        "birthTimeAssumed",
                         "truncated",
                         "totalDetected"
                       ],
@@ -4127,13 +4152,18 @@
                             },
                             "julianDay": {
                               "type": "number"
+                            },
+                            "birthTimeAssumed": {
+                              "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
+                              "type": "boolean"
                             }
                           },
                           "required": [
                             "schemaVersion",
                             "calculatedAt",
                             "houseSystem",
-                            "julianDay"
+                            "julianDay",
+                            "birthTimeAssumed"
                           ],
                           "additionalProperties": false
                         }
@@ -4496,13 +4526,18 @@
                             },
                             "julianDay": {
                               "type": "number"
+                            },
+                            "birthTimeAssumed": {
+                              "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
+                              "type": "boolean"
                             }
                           },
                           "required": [
                             "schemaVersion",
                             "calculatedAt",
                             "houseSystem",
-                            "julianDay"
+                            "julianDay",
+                            "birthTimeAssumed"
                           ],
                           "additionalProperties": false
                         }
@@ -4865,13 +4900,18 @@
                             },
                             "julianDay": {
                               "type": "number"
+                            },
+                            "birthTimeAssumed": {
+                              "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
+                              "type": "boolean"
                             }
                           },
                           "required": [
                             "schemaVersion",
                             "calculatedAt",
                             "houseSystem",
-                            "julianDay"
+                            "julianDay",
+                            "birthTimeAssumed"
                           ],
                           "additionalProperties": false
                         }
@@ -5956,13 +5996,18 @@
                             },
                             "julianDay": {
                               "type": "number"
+                            },
+                            "birthTimeAssumed": {
+                              "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
+                              "type": "boolean"
                             }
                           },
                           "required": [
                             "schemaVersion",
                             "calculatedAt",
                             "houseSystem",
-                            "julianDay"
+                            "julianDay",
+                            "birthTimeAssumed"
                           ],
                           "additionalProperties": false
                         }
@@ -6325,13 +6370,18 @@
                             },
                             "julianDay": {
                               "type": "number"
+                            },
+                            "birthTimeAssumed": {
+                              "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
+                              "type": "boolean"
                             }
                           },
                           "required": [
                             "schemaVersion",
                             "calculatedAt",
                             "houseSystem",
-                            "julianDay"
+                            "julianDay",
+                            "birthTimeAssumed"
                           ],
                           "additionalProperties": false
                         }
@@ -7221,13 +7271,18 @@
                         },
                         "julianDay": {
                           "type": "number"
+                        },
+                        "birthTimeAssumed": {
+                          "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
+                          "type": "boolean"
                         }
                       },
                       "required": [
                         "schemaVersion",
                         "calculatedAt",
                         "houseSystem",
-                        "julianDay"
+                        "julianDay",
+                        "birthTimeAssumed"
                       ],
                       "additionalProperties": false
                     },
@@ -8267,13 +8322,18 @@
                             },
                             "julianDay": {
                               "type": "number"
+                            },
+                            "birthTimeAssumed": {
+                              "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
+                              "type": "boolean"
                             }
                           },
                           "required": [
                             "schemaVersion",
                             "calculatedAt",
                             "houseSystem",
-                            "julianDay"
+                            "julianDay",
+                            "birthTimeAssumed"
                           ],
                           "additionalProperties": false
                         }
@@ -8636,13 +8696,18 @@
                             },
                             "julianDay": {
                               "type": "number"
+                            },
+                            "birthTimeAssumed": {
+                              "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
+                              "type": "boolean"
                             }
                           },
                           "required": [
                             "schemaVersion",
                             "calculatedAt",
                             "houseSystem",
-                            "julianDay"
+                            "julianDay",
+                            "birthTimeAssumed"
                           ],
                           "additionalProperties": false
                         }
@@ -9845,13 +9910,18 @@
                         },
                         "julianDay": {
                           "type": "number"
+                        },
+                        "birthTimeAssumed": {
+                          "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
+                          "type": "boolean"
                         }
                       },
                       "required": [
                         "schemaVersion",
                         "calculatedAt",
                         "houseSystem",
-                        "julianDay"
+                        "julianDay",
+                        "birthTimeAssumed"
                       ],
                       "additionalProperties": false
                     },
@@ -10507,13 +10577,18 @@
                         },
                         "julianDay": {
                           "type": "number"
+                        },
+                        "birthTimeAssumed": {
+                          "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
+                          "type": "boolean"
                         }
                       },
                       "required": [
                         "schemaVersion",
                         "calculatedAt",
                         "houseSystem",
-                        "julianDay"
+                        "julianDay",
+                        "birthTimeAssumed"
                       ],
                       "additionalProperties": false
                     },
@@ -11197,13 +11272,18 @@
                         },
                         "julianDay": {
                           "type": "number"
+                        },
+                        "birthTimeAssumed": {
+                          "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
+                          "type": "boolean"
                         }
                       },
                       "required": [
                         "schemaVersion",
                         "calculatedAt",
                         "houseSystem",
-                        "julianDay"
+                        "julianDay",
+                        "birthTimeAssumed"
                       ],
                       "additionalProperties": false
                     },

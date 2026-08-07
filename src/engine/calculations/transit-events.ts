@@ -102,7 +102,12 @@ export function shiftedAnglesFor(exactAngle: number): number[] {
 }
 
 export interface TransitEventsComputationParams {
-  /** Natal chart computed once by the caller (houses/angles may be null when birth time is unknown). */
+  /**
+   * Natal chart computed once by the caller. Houses/angles may still be null
+   * (a hand-built chart, a future caller); when the birth time was unknown
+   * they are present but noon-assumed — `natal.meta.birthTimeAssumed` says
+   * which, and it is copied onto this result's meta.
+   */
   natal: NatalChartData;
   startDate: string;
   endDate: string;
@@ -299,6 +304,9 @@ export function computeTransitEvents(params: TransitEventsComputationParams): Tr
     meta: {
       schemaVersion: SCHEMA_VERSION,
       calculatedAt: new Date().toISOString(),
+      // HOUSE_INGRESS events and the Sun's natal house/hemisphere are read off
+      // the natal houses, so the natal chart's assumption travels with them.
+      birthTimeAssumed: natal.meta.birthTimeAssumed,
       truncated,
       totalDetected,
     },

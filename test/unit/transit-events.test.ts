@@ -203,25 +203,40 @@ describe('computeTransitEvents — noise cap', () => {
   });
 });
 
+// Before ENGA-2976 this block asserted the opposite: with an unknown birth
+// time the natal chart had no houses, so HOUSE_INGRESS events, ASC/MC aspect
+// targets and the Sun's house/hemisphere context were all absent. Decision C
+// replaced that silence with a labelled assumption — the events are emitted
+// from noon-assumed houses, and `meta.birthTimeAssumed` is what tells the
+// caller not to state them as fact.
 describe('calculateTransitEvents — unknown birth time', () => {
-  it('skips HOUSE_INGRESS and ASC/MC targets but still succeeds', () => {
+  it('emits house-derived events from the noon assumption and flags them', () => {
     const result = calculateTransitEvents({
       ...base,
       birthTime: null,
       startDate: '2026-01-01',
       endDate: '2026-12-31',
     });
+    expect(result.meta.birthTimeAssumed).toBe(true);
     expect(result.events.length).toBeGreaterThan(0);
-    for (const e of result.events) {
-      expect(e.kind).not.toBe('HOUSE_INGRESS');
-      if (e.kind === 'NATAL_ASPECT') {
-        expect(e.natal).not.toBe('ASC');
-        expect(e.natal).not.toBe('MC');
-      }
-    }
-    // Without houses, the Sun's house/hemisphere context is null but the sign remains.
+    expect(result.events.some((e) => e.kind === 'HOUSE_INGRESS')).toBe(true);
+    expect(
+      result.events.some((e) => e.kind === 'NATAL_ASPECT' && (e.natal === 'ASC' || e.natal === 'MC')),
+    ).toBe(true);
+    // The Sun's house/hemisphere context now resolves — off the assumed houses.
     expect(result.context.sunSignAtStart).toMatch(/^[A-Z]{3}$/);
-    expect(result.context.sunNatalHouseAtStart).toBeNull();
-    expect(result.context.sunHemisphereAtStart).toBeNull();
+    expect(result.context.sunNatalHouseAtStart).toBeGreaterThanOrEqual(1);
+    expect(result.context.sunNatalHouseAtStart).toBeLessThanOrEqual(12);
+    expect(result.context.sunHemisphereAtStart).not.toBeNull();
+  });
+
+  it('flags a known birth time as not assumed', () => {
+    const result = calculateTransitEvents({
+      ...base,
+      birthTime: '14:30',
+      startDate: '2026-01-01',
+      endDate: '2026-03-31',
+    });
+    expect(result.meta.birthTimeAssumed).toBe(false);
   });
 });
