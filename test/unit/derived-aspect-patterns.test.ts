@@ -42,6 +42,7 @@ function fireGrandTrineChart(): NatalChartData {
       houseSystem: 'PLACIDUS',
       zodiacSystem: 'tropical',
       julianDay: 0,
+      birthTimeAssumed: false,
     },
   };
 }
@@ -78,6 +79,7 @@ describe('attachAspectPatterns', () => {
         houseSystem: 'PLACIDUS',
         zodiacSystem: 'tropical',
         julianDay: 0,
+        birthTimeAssumed: false,
       },
     };
     expect(attachAspectPatterns(chart).aspectPatterns).toEqual([]);

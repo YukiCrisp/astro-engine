@@ -63,7 +63,11 @@ curl -X POST http://localhost:3001/v1/charts/natal \
   }'
 ```
 
-When `birthTime` is `null`, houses and angles are omitted (`null`) and planet positions are calculated at noon.
+When `birthTime` is `null` the whole chart is calculated at local noon — planets, and since ENGA-2976 houses and angles too — and `meta.birthTimeAssumed` is `true`.
+
+That flag is part of the contract, not a hint. An assumed-noon ASC advances a full sign roughly every two hours, so it lands on the true sign about one time in twelve; `arabicParts` and every house placement inherit the same error. Clients must branch on `meta.birthTimeAssumed`, not on `angles !== null` — the engine now fills `angles` in from the assumption, so the null check no longer separates measured from assumed. `/v1/charts/transit-events` mirrors the flag onto its own `meta`, because its HOUSE_INGRESS events and Sun house/hemisphere context are read off the natal houses.
+
+Transit charts are the one exception: `transitTime: null` still returns `houses`/`angles` as `null`, since a transit moment is chosen by the caller rather than recovered from birth data.
 
 ### POST /v1/charts/triple
 ```bash

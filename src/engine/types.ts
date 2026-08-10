@@ -87,6 +87,23 @@ export interface NatalChartData {
     houseSystem: HouseSystem;
     zodiacSystem?: ZodiacSystem;
     julianDay: number;
+    /**
+     * True when no clock time was supplied for this chart and local noon was
+     * assumed in its place.
+     *
+     * Everything that depends on the rotation of the Earth is then a product
+     * of that assumption rather than of the birth data: `angles` (ASC / MC /
+     * DSC / IC / vertex / east point / part of fortune), `houses`, every house
+     * placement derived from them, and `arabicParts`. The ASC advances a full
+     * sign roughly every two hours, so an assumed-noon ASC lands on the true
+     * sign about one time in twelve.
+     *
+     * Consumers MUST NOT present angle- or house-derived statements as fact
+     * while this is true. `angles !== null` is NOT a sufficient check — since
+     * ENGA-2976 the engine fills those fields in from the noon assumption, so
+     * this flag is the only thing that distinguishes measured from assumed.
+     */
+    birthTimeAssumed: boolean;
   };
 }
 
@@ -184,7 +201,9 @@ export interface TransitEventsData {
   /**
    * Always-present structural context so a report has a spine even when the
    * event list is thin: where the transiting Sun sits at the window start.
-   * House/hemisphere are null when birth time (and thus houses) is unknown.
+   * House/hemisphere follow the natal houses, so they carry the natal chart's
+   * `meta.birthTimeAssumed` caveat (they are assumption-derived, not null,
+   * when the birth time is unknown).
    */
   context: {
     sunSignAtStart: SignName;
@@ -194,6 +213,13 @@ export interface TransitEventsData {
   meta: {
     schemaVersion: number;
     calculatedAt: string;
+    /**
+     * Mirrors the natal chart's `meta.birthTimeAssumed`. HOUSE_INGRESS events
+     * and `context.sunNatalHouseAtStart` / `sunHemisphereAtStart` are derived
+     * from the natal houses, so when this is true they rest on the assumed
+     * noon rather than on a known birth time.
+     */
+    birthTimeAssumed: boolean;
     truncated: boolean;
     totalDetected: number;
   };
