@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".codex/hooks/load-vault-hub.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
