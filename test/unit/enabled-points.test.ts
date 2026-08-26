@@ -151,4 +151,60 @@ describe('enabledPoints request validation', () => {
     expect(response.statusCode).toBe(400);
     expect(response.json().error.code).toBe('VALIDATION_ERROR');
   });
+
+  it('passes enabledPoints through the natal analysis route', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/charts/natal/analysis',
+      payload: {
+        ...personA,
+        enabledPlanets: ['SUN', 'MOON'],
+        enabledPoints: ['TRUE_NODE'],
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().planets.map((planet: { id: PlanetId }) => planet.id)).toEqual([
+      'SUN', 'MOON', 'TRUE_NODE',
+    ]);
+  });
+
+  it('passes enabledPoints through the triple route to every chart', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/charts/triple',
+      payload: {
+        natal: personA,
+        progressed: { progressedDate: '2026-06-15' },
+        transit,
+        enabledPlanets: ['SUN'],
+        enabledPoints: ['MEAN_NODE'],
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const result = response.json();
+    const expectedIds = ['SUN', 'MEAN_NODE'];
+    expect(result.natal.planets.map((planet: { id: PlanetId }) => planet.id)).toEqual(expectedIds);
+    expect(result.progressed.planets.map((planet: { id: PlanetId }) => planet.id)).toEqual(expectedIds);
+    expect(result.transit.planets.map((planet: { id: PlanetId }) => planet.id)).toEqual(expectedIds);
+  });
+
+  it('treats an empty enabledPoints array as the 16 non-point bodies', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/charts/natal/analysis',
+      payload: {
+        ...personA,
+        enabledPoints: [],
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().planets.map((planet: { id: PlanetId }) => planet.id)).toEqual([
+      'SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS',
+      'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE', 'PLUTO',
+      'CHIRON', 'PHOLUS', 'CERES', 'PALLAS', 'JUNO', 'VESTA',
+    ]);
+  });
 });
