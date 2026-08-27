@@ -16,13 +16,14 @@ import { calculateArabicParts } from './calculations/arabic-parts.js';
 import type { ArabicPartId } from './calculations/arabic-parts.js';
 import { calculateFixedStars } from './calculations/fixed-stars.js';
 import { computeAstromapLines, computeAstromapParans, ASTROMAP_PLANETS } from './calculations/astrocartography.js';
+import { resolveEnabledBodies } from './calculations/body-filter.js';
 import { buildJulianDay, toJulianDay, fromJulianDay, parseDateString } from '../utils/date.js';
 import { SCHEMA_VERSION } from './types.js';
 import type {
   NatalChartData, HouseSystem, ZodiacSystem, TripleChartData,
   SynastryChartData, CompositeTransitChartData, EphemerisData, EphemerisEvent,
   VocMoonData, AstromapData, TransitEventsData,
-  PlanetId, PlanetPosition, AspectType, SignName,
+  PlanetId, PointId, PlanetPosition, AspectType, SignName,
 } from './types.js';
 
 function computePartOfFortune(angles: import('./types.js').ChartAngles, planets: import('./types.js').PlanetPosition[]): void {
@@ -35,6 +36,7 @@ function computePartOfFortune(angles: import('./types.js').ChartAngles, planets:
 
 export interface EngineFilterParams {
   enabledPlanets?: PlanetId[];
+  enabledPoints?: PointId[];
   enabledAspects?: AspectType[];
   aspectOrbs?: Partial<Record<AspectType, number>>;
   sunOrbBonus?: number;
@@ -119,7 +121,7 @@ export function calculateNatal(params: {
   const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
   const birthTimeAssumed = params.birthTime === null;
   const jd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
-  const planets = calcPlanets(jd, params.enabledPlanets, zodiac);
+  const planets = calcPlanets(jd, resolveEnabledBodies(params.enabledPlanets, params.enabledPoints), zodiac);
   const aspects = detectAspects(planets, 1, toAspectConfig(params));
 
   // Houses and angles are computed even when the birth time is unknown: the
@@ -163,7 +165,7 @@ export function calculateProgressed(params: {
   const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
   const birthTimeAssumed = params.birthTime === null;
   const jd = getProgressedJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes, params.progressedDate);
-  const planets = calcPlanets(jd, params.enabledPlanets, zodiac);
+  const planets = calcPlanets(jd, resolveEnabledBodies(params.enabledPlanets, params.enabledPoints), zodiac);
   const aspects = detectAspects(planets, 1, toAspectConfig(params));
 
   // Same noon assumption as natal — see `calculateNatal`.
@@ -185,7 +187,7 @@ export function calculateTransit(params: {
 } & EngineFilterParams): NatalChartData {
   const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
   const jd = buildJulianDay(params.transitDate, params.transitTime, params.utcOffsetMinutes);
-  const planets = calcPlanets(jd, params.enabledPlanets, zodiac);
+  const planets = calcPlanets(jd, resolveEnabledBodies(params.enabledPlanets, params.enabledPoints), zodiac);
   const aspects = detectAspects(planets, 1, toAspectConfig(params));
 
   // A transit chart's moment is chosen by the caller, not recovered from birth
@@ -217,6 +219,7 @@ export function calculateTriple(params: {
 } & EngineFilterParams): TripleChartData {
   const filterParams: EngineFilterParams = {
     enabledPlanets: params.enabledPlanets,
+    enabledPoints: params.enabledPoints,
     enabledAspects: params.enabledAspects,
     aspectOrbs: params.aspectOrbs,
     sunOrbBonus: params.sunOrbBonus,
@@ -245,6 +248,7 @@ export function calculateSynastry(params: {
 } & EngineFilterParams): SynastryChartData {
   const filterParams: EngineFilterParams = {
     enabledPlanets: params.enabledPlanets,
+    enabledPoints: params.enabledPoints,
     enabledAspects: params.enabledAspects,
     aspectOrbs: params.aspectOrbs,
     sunOrbBonus: params.sunOrbBonus,
@@ -265,6 +269,7 @@ export function calculateComposite(params: {
 } & EngineFilterParams): NatalChartData {
   const filterParams: EngineFilterParams = {
     enabledPlanets: params.enabledPlanets,
+    enabledPoints: params.enabledPoints,
     enabledAspects: params.enabledAspects,
     aspectOrbs: params.aspectOrbs,
     sunOrbBonus: params.sunOrbBonus,
@@ -371,6 +376,7 @@ export function calculateCompositeTransit(params: {
 } & EngineFilterParams): CompositeTransitChartData {
   const filterParams: EngineFilterParams = {
     enabledPlanets: params.enabledPlanets,
+    enabledPoints: params.enabledPoints,
     enabledAspects: params.enabledAspects,
     aspectOrbs: params.aspectOrbs,
     sunOrbBonus: params.sunOrbBonus,
@@ -398,7 +404,11 @@ export function calculateSolarArc(params: {
 
   // 1. Calculate the natal chart
   const natalJd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
-  const natalPlanets = calcPlanets(natalJd, params.enabledPlanets, zodiac);
+  const natalPlanets = calcPlanets(
+    natalJd,
+    resolveEnabledBodies(params.enabledPlanets, params.enabledPoints),
+    zodiac,
+  );
   const natalSun = natalPlanets.find(p => p.id === 'SUN');
   if (!natalSun) throw new Error('Could not calculate natal Sun position');
 
@@ -447,7 +457,11 @@ export function calculateSolarReturn(params: {
   );
 
   // 3. Calculate full chart at that JD using return location
-  const planets = calcPlanets(solarReturnJd, params.enabledPlanets, zodiac);
+  const planets = calcPlanets(
+    solarReturnJd,
+    resolveEnabledBodies(params.enabledPlanets, params.enabledPoints),
+    zodiac,
+  );
   const aspects = detectAspects(planets, 1, toAspectConfig(params));
   const { houses, angles } = calcHouses(solarReturnJd, params.returnLat, params.returnLon, params.houseSystem, zodiac);
   computePartOfFortune(angles, planets);
@@ -495,7 +509,11 @@ export function calculateLunarReturn(params: {
   );
 
   // 3. Calculate full chart at that JD using return location
-  const planets = calcPlanets(lunarReturnJd, params.enabledPlanets, zodiac);
+  const planets = calcPlanets(
+    lunarReturnJd,
+    resolveEnabledBodies(params.enabledPlanets, params.enabledPoints),
+    zodiac,
+  );
   const aspects = detectAspects(planets, 1, toAspectConfig(params));
   const { houses, angles } = calcHouses(lunarReturnJd, params.returnLat, params.returnLon, params.houseSystem, zodiac);
   computePartOfFortune(angles, planets);

@@ -7,6 +7,8 @@ export type PlanetId =
   | 'MEAN_NODE' | 'MEAN_LILITH' | 'TRUE_LILITH'
   | 'PHOLUS' | 'CERES' | 'PALLAS' | 'JUNO' | 'VESTA';
 
+export type PointId = 'TRUE_NODE' | 'MEAN_NODE' | 'MEAN_LILITH' | 'TRUE_LILITH';
+
 export type SignName =
   | 'ARI' | 'TAU' | 'GEM' | 'CAN' | 'LEO' | 'VIR'
   | 'LIB' | 'SCO' | 'SAG' | 'CAP' | 'AQU' | 'PIS';

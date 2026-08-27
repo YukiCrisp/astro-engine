@@ -122,6 +122,19 @@
                       ]
                     }
                   },
+                  "enabledPoints": {
+                    "description": "Additional calculated points to include",
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "TRUE_NODE",
+                        "MEAN_NODE",
+                        "MEAN_LILITH",
+                        "TRUE_LILITH"
+                      ]
+                    }
+                  },
                   "enabledAspects": {
                     "description": "Only detect these aspect types",
                     "type": "array",
@@ -667,6 +680,19 @@
                         "PALLAS",
                         "JUNO",
                         "VESTA"
+                      ]
+                    }
+                  },
+                  "enabledPoints": {
+                    "description": "Additional calculated points to include",
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "TRUE_NODE",
+                        "MEAN_NODE",
+                        "MEAN_LILITH",
+                        "TRUE_LILITH"
                       ]
                     }
                   },
@@ -1587,6 +1613,19 @@
                       ]
                     }
                   },
+                  "enabledPoints": {
+                    "description": "Additional calculated points to include",
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "TRUE_NODE",
+                        "MEAN_NODE",
+                        "MEAN_LILITH",
+                        "TRUE_LILITH"
+                      ]
+                    }
+                  },
                   "enabledAspects": {
                     "description": "Only detect these aspect types",
                     "type": "array",
@@ -2263,6 +2302,19 @@
                         "PALLAS",
                         "JUNO",
                         "VESTA"
+                      ]
+                    }
+                  },
+                  "enabledPoints": {
+                    "description": "Additional calculated points to include",
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "TRUE_NODE",
+                        "MEAN_NODE",
+                        "MEAN_LILITH",
+                        "TRUE_LILITH"
                       ]
                     }
                   },
@@ -3465,6 +3517,19 @@
                           ]
                         }
                       },
+                      "enabledPoints": {
+                        "description": "Additional calculated points to include",
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "TRUE_NODE",
+                            "MEAN_NODE",
+                            "MEAN_LILITH",
+                            "TRUE_LILITH"
+                          ]
+                        }
+                      },
                       "enabledAspects": {
                         "description": "Only detect these aspect types",
                         "type": "array",
@@ -3640,6 +3705,19 @@
                           ]
                         }
                       },
+                      "enabledPoints": {
+                        "description": "Additional calculated points to include",
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "TRUE_NODE",
+                            "MEAN_NODE",
+                            "MEAN_LILITH",
+                            "TRUE_LILITH"
+                          ]
+                        }
+                      },
                       "enabledAspects": {
                         "description": "Only detect these aspect types",
                         "type": "array",
@@ -3731,6 +3809,19 @@
                         "PALLAS",
                         "JUNO",
                         "VESTA"
+                      ]
+                    }
+                  },
+                  "enabledPoints": {
+                    "description": "Additional calculated points to include",
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "TRUE_NODE",
+                        "MEAN_NODE",
+                        "MEAN_LILITH",
+                        "TRUE_LILITH"
                       ]
                     }
                   },
@@ -5341,6 +5432,19 @@
                           ]
                         }
                       },
+                      "enabledPoints": {
+                        "description": "Additional calculated points to include",
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "TRUE_NODE",
+                            "MEAN_NODE",
+                            "MEAN_LILITH",
+                            "TRUE_LILITH"
+                          ]
+                        }
+                      },
                       "enabledAspects": {
                         "description": "Only detect these aspect types",
                         "type": "array",
@@ -5490,6 +5594,19 @@
                           ]
                         }
                       },
+                      "enabledPoints": {
+                        "description": "Additional calculated points to include",
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "TRUE_NODE",
+                            "MEAN_NODE",
+                            "MEAN_LILITH",
+                            "TRUE_LILITH"
+                          ]
+                        }
+                      },
                       "enabledAspects": {
                         "description": "Only detect these aspect types",
                         "type": "array",
@@ -5576,6 +5693,19 @@
                         "PALLAS",
                         "JUNO",
                         "VESTA"
+                      ]
+                    }
+                  },
+                  "enabledPoints": {
+                    "description": "Additional calculated points to include",
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "TRUE_NODE",
+                        "MEAN_NODE",
+                        "MEAN_LILITH",
+                        "TRUE_LILITH"
                       ]
                     }
                   },
@@ -6619,6 +6749,19 @@
                           ]
                         }
                       },
+                      "enabledPoints": {
+                        "description": "Additional calculated points to include",
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "TRUE_NODE",
+                            "MEAN_NODE",
+                            "MEAN_LILITH",
+                            "TRUE_LILITH"
+                          ]
+                        }
+                      },
                       "enabledAspects": {
                         "description": "Only detect these aspect types",
                         "type": "array",
@@ -6768,6 +6911,19 @@
                           ]
                         }
                       },
+                      "enabledPoints": {
+                        "description": "Additional calculated points to include",
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "TRUE_NODE",
+                            "MEAN_NODE",
+                            "MEAN_LILITH",
+                            "TRUE_LILITH"
+                          ]
+                        }
+                      },
                       "enabledAspects": {
                         "description": "Only detect these aspect types",
                         "type": "array",
@@ -6854,6 +7010,19 @@
                         "PALLAS",
                         "JUNO",
                         "VESTA"
+                      ]
+                    }
+                  },
+                  "enabledPoints": {
+                    "description": "Additional calculated points to include",
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "TRUE_NODE",
+                        "MEAN_NODE",
+                        "MEAN_LILITH",
+                        "TRUE_LILITH"
                       ]
                     }
                   },
@@ -7517,6 +7686,19 @@
                           ]
                         }
                       },
+                      "enabledPoints": {
+                        "description": "Additional calculated points to include",
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "TRUE_NODE",
+                            "MEAN_NODE",
+                            "MEAN_LILITH",
+                            "TRUE_LILITH"
+                          ]
+                        }
+                      },
                       "enabledAspects": {
                         "description": "Only detect these aspect types",
                         "type": "array",
@@ -7663,6 +7845,19 @@
                             "PALLAS",
                             "JUNO",
                             "VESTA"
+                          ]
+                        }
+                      },
+                      "enabledPoints": {
+                        "description": "Additional calculated points to include",
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "TRUE_NODE",
+                            "MEAN_NODE",
+                            "MEAN_LILITH",
+                            "TRUE_LILITH"
                           ]
                         }
                       },
@@ -7815,6 +8010,19 @@
                           ]
                         }
                       },
+                      "enabledPoints": {
+                        "description": "Additional calculated points to include",
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "TRUE_NODE",
+                            "MEAN_NODE",
+                            "MEAN_LILITH",
+                            "TRUE_LILITH"
+                          ]
+                        }
+                      },
                       "enabledAspects": {
                         "description": "Only detect these aspect types",
                         "type": "array",
@@ -7901,6 +8109,19 @@
                         "PALLAS",
                         "JUNO",
                         "VESTA"
+                      ]
+                    }
+                  },
+                  "enabledPoints": {
+                    "description": "Additional calculated points to include",
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "TRUE_NODE",
+                        "MEAN_NODE",
+                        "MEAN_LILITH",
+                        "TRUE_LILITH"
                       ]
                     }
                   },
@@ -9489,6 +9710,19 @@
                       ]
                     }
                   },
+                  "enabledPoints": {
+                    "description": "Additional calculated points to include",
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "TRUE_NODE",
+                        "MEAN_NODE",
+                        "MEAN_LILITH",
+                        "TRUE_LILITH"
+                      ]
+                    }
+                  },
                   "enabledAspects": {
                     "description": "Only detect these aspect types",
                     "type": "array",
@@ -10150,6 +10384,19 @@
                         "PALLAS",
                         "JUNO",
                         "VESTA"
+                      ]
+                    }
+                  },
+                  "enabledPoints": {
+                    "description": "Additional calculated points to include",
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "TRUE_NODE",
+                        "MEAN_NODE",
+                        "MEAN_LILITH",
+                        "TRUE_LILITH"
                       ]
                     }
                   },
@@ -10848,6 +11095,19 @@
                         "PALLAS",
                         "JUNO",
                         "VESTA"
+                      ]
+                    }
+                  },
+                  "enabledPoints": {
+                    "description": "Additional calculated points to include",
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "TRUE_NODE",
+                        "MEAN_NODE",
+                        "MEAN_LILITH",
+                        "TRUE_LILITH"
                       ]
                     }
                   },

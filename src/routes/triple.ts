@@ -19,13 +19,14 @@ export async function tripleRoute(app: FastifyInstance) {
     handler: async (req) => {
       const cacheKey = chartCache.generateKey(req.body as Record<string, unknown>);
       return chartCache.getOrSet(cacheKey, () => {
-        const { natal, progressed, transit, computeCrossAspects, enabledPlanets, enabledAspects, aspectOrbs, sunOrbBonus, moonOrbBonus } = req.body;
+        const { natal, progressed, transit, computeCrossAspects, enabledPlanets, enabledPoints, enabledAspects, aspectOrbs, sunOrbBonus, moonOrbBonus } = req.body;
         return calculateTriple({
           natal,
           progressedDate: progressed.progressedDate,
           transit,
           computeCrossAspects,
           enabledPlanets,
+          enabledPoints,
           enabledAspects,
           aspectOrbs,
           sunOrbBonus,

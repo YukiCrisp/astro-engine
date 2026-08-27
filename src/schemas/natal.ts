@@ -1,8 +1,13 @@
 import { z } from 'zod';
 import { PlanetIdEnum, AspectTypeEnum, ArabicPartIdEnum } from './responses.js';
 
+export const PointIdEnum = z.enum([
+  'TRUE_NODE', 'MEAN_NODE', 'MEAN_LILITH', 'TRUE_LILITH',
+]);
+
 export const EngineFilterSchema = z.object({
   enabledPlanets: z.array(PlanetIdEnum).optional().describe('Only compute these planets'),
+  enabledPoints: z.array(PointIdEnum).optional().describe('Additional calculated points to include'),
   enabledAspects: z.array(AspectTypeEnum).optional().describe('Only detect these aspect types'),
   aspectOrbs: z.record(z.string(), z.number()).optional().describe('Override orb per aspect type'),
   sunOrbBonus: z.number().optional().describe('Extra orb for Sun aspects'),
