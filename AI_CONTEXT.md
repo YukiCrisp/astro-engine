@@ -47,3 +47,7 @@ The service has no application authentication. Keep it on a private network and 
 ## Optional local enrichment
 
 If `SECOND_BRAIN_PATH` is set, the Claude and Codex hooks may print the local HOSHIDOU hub. It is optional, read-only enrichment. A missing, unset, or unreadable path must not prevent normal repository work.
+
+## Branch and merge rule (2026-09-03)
+
+Collect development on the `dev` branch (create it from `main` if it does not exist). Ship by opening a pull request `dev` → `main`; **Yuki reviews and merges it**. Agents may merge verified feature-branch PRs into `dev` (checks green) without asking, but never merge into `main` — an instruction such as "no need to confirm" or "finish everything" covers work up to `dev` only. Do not merge release PRs opened by other sessions either. Merging into `main` is production release. Same rule as goyoka.
