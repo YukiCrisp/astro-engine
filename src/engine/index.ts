@@ -620,6 +620,15 @@ export function calculateEphemeris(params: {
   const dates: string[] = [];
   const jds: number[] = [];
 
+  // Lead with noon UTC of the previous month's last day. It is not returned in
+  // `days`: it only closes the bracket up to day 1's noon, which the previous
+  // month's response (ending at its own last noon) never examines. Events there
+  // take day 1's date like any other, so each lands in exactly one month.
+  const jdPrevNoon = toJulianDay(year, month, 1, 12) - 1;
+  dates.push(fromJulianDay(jdPrevNoon).slice(0, 10));
+  jds.push(jdPrevNoon);
+  dailyPositions.push(calcPlanets(jdPrevNoon, params.enabledPlanets, zodiac));
+
   // Calculate positions for each day at noon UTC
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -740,7 +749,7 @@ export function calculateEphemeris(params: {
 
   return {
     year, month,
-    days: dates.map((date, i) => ({ date, planets: dailyPositions[i] })),
+    days: dates.map((date, i) => ({ date, planets: dailyPositions[i] })).slice(1),
     events,
     meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString() },
   };

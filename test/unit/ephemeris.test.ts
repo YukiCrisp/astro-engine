@@ -192,6 +192,59 @@ describe('calculateEphemeris exact event times (ENGA-1944)', () => {
   });
 });
 
+describe('calculateEphemeris month-boundary bracket', () => {
+  // Each month samples its own days at noon UTC, so the 24h from the previous
+  // month's last noon to day 1's noon straddles two responses. The Moon enters
+  // Gemini inside the 2026-09-30 → 10-01 bracket (Taurus at the first noon,
+  // Gemini at the second). Events take the later sample's date, so October owns
+  // it and it must reach exactly one response.
+  const bracketStart = Date.UTC(2026, 8, 30, 12);
+  const bracketEnd = Date.UTC(2026, 9, 1, 12);
+  const inBracket = (e: { time?: string }) => {
+    const t = new Date(e.time!).getTime();
+    return t >= bracketStart && t <= bracketEnd;
+  };
+  const isMoonIngress = (e: { type: string; planet: string }) =>
+    e.type === 'INGRESS' && e.planet === 'MOON';
+
+  it('reports the ingress in October, dated day 1, exactly once', () => {
+    const october = calculateEphemeris({ year: 2026, month: 10 });
+    expect(october.events.filter((e) => isMoonIngress(e) && inBracket(e))).toEqual([
+      expect.objectContaining({ date: '2026-10-01', detail: 'MOON enters GEM' }),
+    ]);
+  });
+
+  it('keeps it out of September, which still ends at its own last noon', () => {
+    const september = calculateEphemeris({ year: 2026, month: 9 });
+    // Only September's own 30 days; its leading 08-31 sample is not returned.
+    expect(september.days.map((d) => d.date)).toEqual(
+      Array.from({ length: 30 }, (_, i) => `2026-09-${String(i + 1).padStart(2, '0')}`),
+    );
+    // Nothing from the bracket that October owns, nothing dated outside September.
+    expect(september.events.filter(inBracket)).toEqual([]);
+    expect(september.events.filter((e) => !e.date.startsWith('2026-09-'))).toEqual([]);
+    // Its last Moon ingress is still Taurus, in the 09-28 → 09-29 bracket.
+    expect(september.events.filter(isMoonIngress).at(-1)).toMatchObject({
+      date: '2026-09-29', detail: 'MOON enters TAU',
+    });
+  });
+
+  it('samples the previous month\'s noon in the requested zodiac', () => {
+    // A tropical leading sample under sidereal would fabricate day-1 ingresses
+    // (the ~24° ayanamsha puts most bodies in another sign), timed where no
+    // sidereal sign boundary is crossed.
+    const october = calculateEphemeris({ year: 2026, month: 10, zodiacSystem: 'sidereal' });
+    const ingresses = october.events.filter((e) => e.type === 'INGRESS');
+    expect(ingresses.length).toBeGreaterThan(0);
+    for (const e of ingresses) {
+      const jd = 2440587.5 + new Date(e.time!).getTime() / 86_400_000; // Unix epoch = JD 2440587.5
+      const lon = calcPlanets(jd, [e.planet], 'sidereal')[0].longitude;
+      const intoSign = ((lon % 30) + 30) % 30;
+      expect(Math.min(intoSign, 30 - intoSign)).toBeLessThan(0.1);
+    }
+  });
+});
+
 describe('calculateVocMoon zodiacSystem threading (ENGA-1261)', () => {
   const year = 2026;
   const month = 2;
