@@ -245,6 +245,121 @@ describe('calculateEphemeris month-boundary bracket', () => {
   });
 });
 
+// The noon-to-noon bracket that ends at day 1's noon of (year, month), as a
+// predicate over event times.
+function seamOf(year: number, month: number) {
+  const end = Date.UTC(year, month - 1, 1, 12);
+  const start = end - 86_400_000;
+  return (e: { time?: string }) => {
+    const t = new Date(e.time!).getTime();
+    return t >= start && t <= end;
+  };
+}
+
+describe('calculateEphemeris month-boundary bracket across the year boundary', () => {
+  // January's leading sample is noon of the previous year's last day. The Moon
+  // enters Scorpio inside 2026-12-31 → 2027-01-01 (10:15Z on day 1), and the
+  // Sun–Mars trine is exact two minutes after the first noon, still 12-31 in
+  // UTC. Both belong to January 2027 and to no December response.
+  const inSeam = seamOf(2027, 1);
+
+  it('reports the Moon ingress in January 2027, dated day 1, exactly once', () => {
+    const january = calculateEphemeris({ year: 2027, month: 1 });
+    const moonIngresses = january.events.filter(
+      (e) => inSeam(e) && e.type === 'INGRESS' && e.planet === 'MOON',
+    );
+    expect(moonIngresses).toEqual([
+      expect.objectContaining({ date: '2027-01-01', detail: 'MOON enters SCO' }),
+    ]);
+    expect(Math.abs(Date.parse(moonIngresses[0].time!) - Date.UTC(2027, 0, 1, 10, 15, 35)))
+      .toBeLessThan(60_000);
+  });
+
+  it('keeps the seam out of December 2026 and the previous year out of January', () => {
+    const december = calculateEphemeris({ year: 2026, month: 12 });
+    const january = calculateEphemeris({ year: 2027, month: 1 });
+    expect(december.events.filter(inSeam)).toEqual([]);
+    const seamEvents = january.events.filter(inSeam);
+    expect(seamEvents.map((e) => e.detail)).toContain('SUN TRINE MARS');
+    expect(seamEvents.every((e) => e.date === '2027-01-01')).toBe(true);
+    // The leading 2026-12-31 sample is not a returned day.
+    expect(january.days.map((d) => d.date)).toEqual(
+      Array.from({ length: 31 }, (_, i) => `2027-01-${String(i + 1).padStart(2, '0')}`),
+    );
+  });
+});
+
+describe('calculateEphemeris month-boundary bracket with nothing in it', () => {
+  // 2026-06-30 noon → 07-01 noon: no body changes sign or direction, and no
+  // slow-planet aspect perfects, so the leading sample must add nothing.
+  const inSeam = seamOf(2026, 7);
+
+  it('adds no event and no day to July 2026', () => {
+    const before = calcPlanets(toJulianDay(2026, 6, 30, 12));
+    const after = calcPlanets(toJulianDay(2026, 7, 1, 12));
+    expect(before.map((p) => [p.sign, p.speed < 0])).toEqual(after.map((p) => [p.sign, p.speed < 0]));
+
+    const june = calculateEphemeris({ year: 2026, month: 6 });
+    const july = calculateEphemeris({ year: 2026, month: 7 });
+    expect([...june.events, ...july.events].filter(inSeam)).toEqual([]);
+    expect(july.events.filter((e) => e.date === '2026-07-01')).toEqual([]);
+    expect(july.days).toHaveLength(31);
+    expect(july.days[0].date).toBe('2026-07-01');
+  });
+});
+
+describe('calculateEphemeris month-boundary brackets, 2025–2027', () => {
+  // Callers merge adjacent months (the app's ICS feed and sky events do). Over
+  // 37 responses (2025-01 … 2028-01), every one of the 36 seams between them
+  // must reach exactly one response, and no event may appear twice. The
+  // expected sign changes and stations come from the two noon samples directly,
+  // not from calculateEphemeris.
+  const responses: ReturnType<typeof calculateEphemeris>[] = [];
+  const eventKey = (e: ReturnType<typeof calculateEphemeris>['events'][number]) =>
+    [e.type, e.planet, e.targetPlanet ?? '', e.aspectType ?? '', e.time].join('|');
+
+  beforeAll(() => {
+    for (let i = 0; i < 37; i++) {
+      responses.push(calculateEphemeris({ year: 2025 + Math.floor(i / 12), month: (i % 12) + 1 }));
+    }
+  });
+
+  it('reports every sign change and station across each seam exactly once', () => {
+    const merged = responses.flatMap((r) => r.events);
+    let seamsWithSignChange = 0;
+    for (const { year, month } of responses.slice(1)) {
+      const inSeam = seamOf(year, month);
+      const before = calcPlanets(toJulianDay(year, month, 1, 12) - 1);
+      const after = calcPlanets(toJulianDay(year, month, 1, 12));
+      if (before.some((p, i) => p.sign !== after[i].sign)) seamsWithSignChange++;
+      before.forEach((p, i) => {
+        const found = (types: string[]) => merged
+          .filter((e) => inSeam(e) && e.planet === p.id && types.includes(e.type));
+        const where = `seam before ${year}-${month}, ${p.id}`;
+        if (p.sign !== after[i].sign) {
+          expect(found(['INGRESS']), `${where} ingress`).toHaveLength(1);
+        }
+        if ((p.speed < 0) !== (after[i].speed < 0)) {
+          expect(found(['STATION_RETROGRADE', 'STATION_DIRECT']), `${where} station`).toHaveLength(1);
+        }
+      });
+    }
+    // Most seams carry an ingress (the Moon changes sign every ~2.5 days), so
+    // this is not satisfied vacuously.
+    expect(seamsWithSignChange).toBeGreaterThanOrEqual(20);
+  });
+
+  it('dates each event inside its own month and never repeats one across months', () => {
+    for (const r of responses) {
+      const prefix = `${r.year}-${String(r.month).padStart(2, '0')}-`;
+      expect(r.events.filter((e) => !e.date.startsWith(prefix))).toEqual([]);
+    }
+    const keys = responses.flatMap((r) => r.events.map(eventKey));
+    expect(keys.length).toBeGreaterThan(0);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
 describe('calculateVocMoon zodiacSystem threading (ENGA-1261)', () => {
   const year = 2026;
   const month = 2;
