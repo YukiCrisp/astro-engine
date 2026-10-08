@@ -117,3 +117,132 @@ describe('detectCrossAspects', () => {
     expect(aspects[0].type).toBe('CONJUNCTION');
   });
 });
+
+// Transit positions for 2026-10-09 as returned by get_transit_chart (Issue #30).
+// Venus is retrograde; Pluto is retrograde and nearly stationary.
+const SKY_2026_10_09 = {
+  SUN: makePlanet('SUN', 196.4, 0.99),
+  MERCURY: makePlanet('MERCURY', 220.65, 1.11),
+  VENUS: makePlanet('VENUS', 217.82, -0.23),
+  MARS: makePlanet('MARS', 126.36, 0.57),
+  PLUTO: makePlanet('PLUTO', 303.08, -0.003),
+};
+
+function findAspect(
+  aspects: ReturnType<typeof detectAspects>,
+  x: string,
+  y: string,
+) {
+  return aspects.find(
+    (a) => (a.planetA === x && a.planetB === y) || (a.planetA === y && a.planetB === x),
+  );
+}
+
+describe('detectAspects applying (relative motion)', () => {
+  const { SUN, MERCURY, VENUS, MARS, PLUTO } = SKY_2026_10_09;
+
+  // Run both orderings: the result must not depend on which planet comes first.
+  for (const [label, planets] of [
+    ['engine order', [SUN, MERCURY, VENUS, MARS, PLUTO]],
+    ['reversed order', [PLUTO, MARS, VENUS, MERCURY, SUN]],
+  ] as const) {
+    describe(label, () => {
+      const aspects = detectAspects([...planets]);
+
+      it('retrograde Venus square Mars is applying (exact 2026-10-10T21:31Z)', () => {
+        const a = findAspect(aspects, 'VENUS', 'MARS');
+        expect(a?.type).toBe('SQUARE');
+        expect(a?.orb).toBeCloseTo(1.46, 2);
+        expect(a?.applying).toBe(true);
+      });
+
+      it('Mercury conjunct retrograde Venus is separating', () => {
+        const a = findAspect(aspects, 'MERCURY', 'VENUS');
+        expect(a?.type).toBe('CONJUNCTION');
+        expect(a?.orb).toBeCloseTo(2.83, 2);
+        expect(a?.applying).toBe(false);
+      });
+
+      it('retrograde Venus square retrograde Pluto is applying', () => {
+        const a = findAspect(aspects, 'VENUS', 'PLUTO');
+        expect(a?.type).toBe('SQUARE');
+        expect(a?.orb).toBeCloseTo(4.74, 2);
+        expect(a?.applying).toBe(true);
+      });
+
+      it('direct Sun quintile direct Mars is applying', () => {
+        const a = findAspect(aspects, 'SUN', 'MARS');
+        expect(a?.type).toBe('QUINTILE');
+        expect(a?.applying).toBe(true);
+      });
+
+      it('direct Mars opposite retrograde Pluto is separating (exact 2026-10-03T10:38Z)', () => {
+        // Opposition point is Leo 3.08; Mars at Leo 6.36 has already passed it.
+        const a = findAspect(aspects, 'MARS', 'PLUTO');
+        expect(a?.type).toBe('OPPOSITION');
+        expect(a?.applying).toBe(false);
+      });
+    });
+  }
+
+  it('a faster planet behind a slower one is applying to the conjunction', () => {
+    const aspects = detectAspects([makePlanet('MARS', 12, 0.5), makePlanet('VENUS', 10, 1.2)]);
+    expect(aspects[0].applying).toBe(true);
+  });
+
+  it('a faster planet ahead of a slower one is separating from the conjunction', () => {
+    const aspects = detectAspects([makePlanet('VENUS', 12, 1.2), makePlanet('MARS', 10, 0.5)]);
+    expect(aspects[0].applying).toBe(false);
+  });
+
+  it('handles the 0°/360° wrap', () => {
+    // Venus at 358 moving forward toward Mars at 2 → applying conjunction
+    const aspects = detectAspects([makePlanet('MARS', 2, 0.5), makePlanet('VENUS', 358, 1.2)]);
+    expect(aspects[0].type).toBe('CONJUNCTION');
+    expect(aspects[0].applying).toBe(true);
+  });
+
+  it('is not applying when both planets move at the same speed', () => {
+    const aspects = detectAspects([makePlanet('MARS', 10, 1), makePlanet('VENUS', 100, 1)]);
+    expect(aspects[0].applying).toBe(false);
+  });
+
+  it('leaves applying undefined when computeApplying is false', () => {
+    const aspects = detectAspects([VENUS, MARS], 1, undefined, false);
+    expect(aspects[0].applying).toBeUndefined();
+  });
+});
+
+describe('detectCrossAspects applying (planetsA fixed, planetsB moving)', () => {
+  it('retrograde transit backing toward a natal point is applying', () => {
+    // Square point is 217; transit Venus 217.82 R moves back toward it.
+    const natal = [makePlanet('MARS', 127, 0.7)];
+    const transit = [SKY_2026_10_09.VENUS];
+    const aspects = detectCrossAspects(natal, transit, undefined, true);
+    expect(aspects[0].type).toBe('SQUARE');
+    expect(aspects[0].applying).toBe(true);
+  });
+
+  it('retrograde transit backing away from a natal point is separating', () => {
+    const natal = [makePlanet('MARS', 128.5, -0.2)];
+    const transit = [SKY_2026_10_09.VENUS];
+    const aspects = detectCrossAspects(natal, transit, undefined, true);
+    expect(aspects[0].type).toBe('SQUARE');
+    expect(aspects[0].applying).toBe(false);
+  });
+
+  it('ignores the natal speed: a slow transit moving past a fast natal planet is separating', () => {
+    // The natal Moon does not move, however fast it was at birth.
+    // Transit Saturn at 53 moves forward, away from natal Moon at 50.
+    const natal = [makePlanet('MOON', 50, 13)];
+    const transit = [makePlanet('SATURN', 53, 0.05)];
+    const aspects = detectCrossAspects(natal, transit, undefined, true);
+    expect(aspects[0].type).toBe('CONJUNCTION');
+    expect(aspects[0].applying).toBe(false);
+  });
+
+  it('leaves applying undefined by default (synastry)', () => {
+    const aspects = detectCrossAspects([makePlanet('MARS', 0)], [makePlanet('SATURN', 3)]);
+    expect(aspects[0].applying).toBeUndefined();
+  });
+});

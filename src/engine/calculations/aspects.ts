@@ -19,6 +19,25 @@ function angularDistance(lonA: number, lonB: number): number {
   return diff > 180 ? 360 - diff : diff;
 }
 
+/**
+ * True when the orb is shrinking at this instant.
+ *
+ * With d = lonA - lonB normalised to (-180, 180], the separation is |d| and
+ * orb = ||d| - angle|, so d(orb)/dt = sign(|d| - angle) * sign(d) * (speedA - speedB).
+ * Comparing raw speeds alone ignores which planet is ahead and whether the
+ * separation is above or below the aspect angle, which flips the result for
+ * retrograde planets and for a faster planet that is already past the other.
+ */
+function isApplying(lonA: number, speedA: number, lonB: number, speedB: number, angle: number): boolean {
+  let d = (lonA - lonB) % 360;
+  if (d > 180) d -= 360;
+  else if (d <= -180) d += 360;
+  const separationRate = Math.sign(d) * (speedA - speedB);
+  // At exactly 0 orb any motion widens it, so an exact aspect counts as separating.
+  const sideOfAngle = Math.abs(d) >= angle ? 1 : -1;
+  return sideOfAngle * separationRate < 0;
+}
+
 export interface AspectConfig {
   enabledAspects?: AspectType[];
   orbOverrides?: Partial<Record<AspectType, number>>;
@@ -61,7 +80,9 @@ export function detectAspects(
         const maxOrb = getOrb(type, a.id, b.id, config?.orbOverrides, config?.sunOrbBonus, config?.moonOrbBonus) * orbMultiplier;
         const orb = Math.abs(dist - angle);
         if (orb <= maxOrb) {
-          const applying = computeApplying ? a.speed > b.speed : undefined;
+          const applying = computeApplying
+            ? isApplying(a.longitude, a.speed, b.longitude, b.speed, angle)
+            : undefined;
           aspects.push({ planetA: a.id, planetB: b.id, type, angle, orb, applying });
           break;
         }
@@ -79,6 +100,11 @@ export function detectAspects(
  * progressed↔transit). Synastry (two static natal charts) and composite
  * (synthesized midpoints) have no time evolution, so applying is left
  * undefined for those.
+ *
+ * When applying is computed, `planetsA` is treated as fixed and only
+ * `planetsB` moves: a natal or composite point does not move, and a
+ * progressed planet moves about a degree a year, negligible next to a
+ * transit. Every caller passes the slower chart as `planetsA`.
  */
 export function detectCrossAspects(
   planetsA: PlanetPosition[],
@@ -97,7 +123,9 @@ export function detectCrossAspects(
         const maxOrb = getOrb(type, a.id, b.id, config?.orbOverrides, config?.sunOrbBonus, config?.moonOrbBonus);
         const orb = Math.abs(dist - angle);
         if (orb <= maxOrb) {
-          const applying = computeApplying ? a.speed > b.speed : undefined;
+          const applying = computeApplying
+            ? isApplying(a.longitude, 0, b.longitude, b.speed, angle)
+            : undefined;
           aspects.push({ planetA: a.id, planetB: b.id, type, angle, orb, applying });
           break;
         }
