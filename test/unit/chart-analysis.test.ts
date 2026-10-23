@@ -252,6 +252,37 @@ describe('findRisingPlanet', () => {
     const planets = [makePlanet('CHIRON', 5)];
     expect(findRisingPlanet(planets, houses, angles)).toBeNull();
   });
+
+  // 2026-10-23: a planet just before the Ascendant (12th-house side, within 8°)
+  // is rising too. Real case: ASC Cancer 19.9°, Sun Cancer 14.5° (12th, 5.4°
+  // before), Mercury Leo 6.1° (1st, 16.2° after) → the Sun, not Mercury.
+  it('counts a planet within 8° before the ASC and prefers it when closer', () => {
+    const houses = makeEqualHouses(109.9);
+    const angles = makeAngles(109.9, 5.8);
+    const planets = [makePlanet('SUN', 104.5), makePlanet('MERCURY', 126.1)];
+    expect(findRisingPlanet(planets, houses, angles)).toBe('SUN');
+  });
+
+  it('keeps a closer 1st-house planet over one before the ASC', () => {
+    const houses = makeEqualHouses(0);
+    const angles = makeAngles(0, 270);
+    const planets = [makePlanet('SUN', 354), makePlanet('MOON', 3)];
+    expect(findRisingPlanet(planets, houses, angles)).toBe('MOON');
+  });
+
+  it('finds a rising planet before the ASC even with an empty 1st house', () => {
+    const houses = makeEqualHouses(0);
+    const angles = makeAngles(0, 270);
+    const planets = [makePlanet('VENUS', 353), makePlanet('MARS', 100)];
+    expect(findRisingPlanet(planets, houses, angles)).toBe('VENUS');
+  });
+
+  it('does not count a planet more than 8° before the ASC', () => {
+    const houses = makeEqualHouses(0);
+    const angles = makeAngles(0, 270);
+    const planets = [makePlanet('VENUS', 351.5)];
+    expect(findRisingPlanet(planets, houses, angles)).toBeNull();
+  });
 });
 
 describe('calculateDistribution', () => {

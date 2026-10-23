@@ -168,6 +168,25 @@ export function findCulminatingPlanet(
   return closest?.id ?? null;
 }
 
+/**
+ * How far before the Ascendant (on the 12th-house side) a planet still counts
+ * as rising. A planet just about to rise is read as a rising planet in most
+ * traditions; 8° matches a conjunction orb. (HOSHIDOU decision, 2026-10-23.)
+ */
+export const RISING_ORB_BEFORE_ASC = 8;
+
+/** Degrees by which `lon` sits before `asc` along the zodiac (0 when at or past it). */
+function degreesBeforeAsc(lon: number, asc: number): number {
+  const d = (((asc - lon) % 360) + 360) % 360;
+  return d > 0 && d < 180 ? d : 0;
+}
+
+/**
+ * The rising planet: the major planet closest to the Ascendant among those in
+ * the 1st house and those within RISING_ORB_BEFORE_ASC degrees before it (12th-
+ * house side). Before 2026-10-23 only the 1st house counted, so a Sun 5° before
+ * the Ascendant (born at sunrise) was skipped for a planet 16° into the 1st.
+ */
 export function findRisingPlanet(
   planets: PlanetPosition[],
   houses: HouseCusp[],
@@ -179,7 +198,9 @@ export function findRisingPlanet(
   for (const planet of planets) {
     if (!(MAJOR_PLANETS as readonly string[]).includes(planet.id)) continue;
     const house = getPlanetHouse(planet.longitude, houses);
-    if (house !== 1) continue;
+    const before = degreesBeforeAsc(planet.longitude, asc);
+    const risingFromBelow = before > 0 && before <= RISING_ORB_BEFORE_ASC;
+    if (house !== 1 && !risingFromBelow) continue;
 
     const dist = angularDistance(planet.longitude, asc);
     if (!closest || dist < closest.dist) {
