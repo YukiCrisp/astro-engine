@@ -12,7 +12,7 @@ import { analyzeChart } from './calculations/chart-analysis.js';
 import type { ChartAnalysis } from './calculations/chart-analysis.js';
 import { detectAspectPatterns } from './calculations/aspect-patterns.js';
 import type { AspectPattern } from './calculations/aspect-patterns.js';
-import { calculateArabicParts } from './calculations/arabic-parts.js';
+import { calculateArabicParts, isDayChartByAngles, partOfFortuneLongitude } from './calculations/arabic-parts.js';
 import type { ArabicPartId } from './calculations/arabic-parts.js';
 import { calculateFixedStars } from './calculations/fixed-stars.js';
 import { computeAstromapLines, computeAstromapParans, ASTROMAP_PLANETS } from './calculations/astrocartography.js';
@@ -30,7 +30,8 @@ function computePartOfFortune(angles: import('./types.js').ChartAngles, planets:
   const sun = planets.find(p => p.id === 'SUN');
   const moon = planets.find(p => p.id === 'MOON');
   if (sun && moon) {
-    angles.partOfFortune = (angles.asc + moon.longitude - sun.longitude + 360) % 360;
+    const isDayChart = isDayChartByAngles(sun.longitude, angles.asc);
+    angles.partOfFortune = partOfFortuneLongitude(angles.asc, sun.longitude, moon.longitude, isDayChart);
   }
 }
 
@@ -48,7 +49,6 @@ export interface EngineFilterParams {
 function computeArabicParts(
   angles: import('./types.js').ChartAngles,
   planets: import('./types.js').PlanetPosition[],
-  houses: import('./types.js').HouseCusp[],
   enabledParts: ArabicPartId[],
 ): import('./types.js').ArabicPartResult[] {
   const sun = planets.find(p => p.id === 'SUN');
@@ -56,29 +56,14 @@ function computeArabicParts(
   const venus = planets.find(p => p.id === 'VENUS');
   if (!sun || !moon || !venus) return [];
 
-  // Determine day/night: Sun above horizon = houses 7-12
-  const sunHouse = getHouseForLongitude(sun.longitude, houses);
-  const isDayChart = sunHouse >= 7;
+  // Sect from the ASC–DSC axis, the same rule computePartOfFortune uses, so the
+  // wheel's ⊗ and the PART_OF_FORTUNE entry always agree.
+  const isDayChart = isDayChartByAngles(sun.longitude, angles.asc);
 
   return calculateArabicParts(
     angles.asc, sun.longitude, moon.longitude,
     venus.longitude, angles.dsc, isDayChart, enabledParts,
   );
-}
-
-function getHouseForLongitude(longitude: number, houses: import('./types.js').HouseCusp[]): number {
-  const sorted = [...houses].sort((a, b) => a.house - b.house);
-  for (let i = 0; i < sorted.length; i++) {
-    const cusp = sorted[i].longitude;
-    const nextCusp = sorted[(i + 1) % sorted.length].longitude;
-    if (nextCusp > cusp) {
-      if (longitude >= cusp && longitude < nextCusp) return sorted[i].house;
-    } else {
-      // Wraps around 360
-      if (longitude >= cusp || longitude < nextCusp) return sorted[i].house;
-    }
-  }
-  return 1;
 }
 
 function toAspectConfig(p?: EngineFilterParams): AspectConfig | undefined {
@@ -135,7 +120,7 @@ export function calculateNatal(params: {
     meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd, birthTimeAssumed },
   };
   if (params.enabledArabicParts && params.enabledArabicParts.length > 0 && houses) {
-    result.arabicParts = computeArabicParts(angles, planets, houses, params.enabledArabicParts);
+    result.arabicParts = computeArabicParts(angles, planets, params.enabledArabicParts);
   }
   if (params.includeFixedStars) {
     result.fixedStars = calculateFixedStars(jd);

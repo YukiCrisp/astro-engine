@@ -32,6 +32,28 @@ function toLotResult(id: ArabicPartId, name: string, longitude: number): ArabicP
 }
 
 /**
+ * Day chart when the Sun is above the horizon, i.e. on the MC side of the
+ * ASC–DSC axis. Measured from the DSC in zodiac order, the upper half spans
+ * [0°, 180°). Uses the angles rather than house numbers so that whole-sign
+ * and equal houses give the same sect as quadrant systems.
+ */
+export function isDayChartByAngles(sunLongitude: number, ascLongitude: number): boolean {
+  return mod360(sunLongitude - ascLongitude - 180) < 180;
+}
+
+/** Part of Fortune: Day = ASC + Moon - Sun; Night = ASC + Sun - Moon. */
+export function partOfFortuneLongitude(
+  ascLongitude: number,
+  sunLongitude: number,
+  moonLongitude: number,
+  isDayChart: boolean,
+): number {
+  return isDayChart
+    ? mod360(ascLongitude + moonLongitude - sunLongitude)
+    : mod360(ascLongitude + sunLongitude - moonLongitude);
+}
+
+/**
  * Calculate Arabic Parts (Lots) from chart data.
  *
  * Formulas (all mod 360):
@@ -58,9 +80,7 @@ export function calculateArabicParts(
     : mod360(ascLongitude + moonLongitude - sunLongitude);
 
   if (enabled.has('PART_OF_FORTUNE')) {
-    const fortuneLon = isDayChart
-      ? mod360(ascLongitude + moonLongitude - sunLongitude)
-      : mod360(ascLongitude + sunLongitude - moonLongitude);
+    const fortuneLon = partOfFortuneLongitude(ascLongitude, sunLongitude, moonLongitude, isDayChart);
     results.push(toLotResult('PART_OF_FORTUNE', 'Part of Fortune', fortuneLon));
   }
 
