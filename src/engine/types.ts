@@ -109,6 +109,20 @@ export interface NatalChartData {
   };
 }
 
+/**
+ * Solar arc response. The inherited fields keep their long-standing meaning:
+ * `planets` are directed, `houses` / `angles` are the natal ones (solar arc
+ * does not progress houses). `arc` and `directedAngles` are additions so a
+ * caller can draw the directed MC / ASC over the natal chart.
+ */
+export interface SolarArcChartData extends NatalChartData {
+  /** Degrees the progressed Sun has moved from the natal Sun (0–360). */
+  arc: number;
+  /** The natal angles moved forward by `arc`. */
+  directedAngles: ChartAngles | null;
+}
+
+
 export interface TripleChartData {
   natal: NatalChartData;
   progressed: NatalChartData;
