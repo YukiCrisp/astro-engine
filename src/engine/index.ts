@@ -6,6 +6,7 @@ import { calculateSolarArcPositions, directSolarArcAngles } from './calculations
 import { findSolarReturnJD } from './calculations/solar-return.js';
 import { findLunarReturnJD, listLunarReturnsInYear } from './calculations/lunar-return.js';
 import { midpointLongitude } from './calculations/composite.js';
+import { compositeHouseCusps } from './calculations/composite-houses.js';
 import { calculateVocPeriods } from './calculations/voc-moon.js';
 import { computeTransitEvents, shiftedAnglesFor, signedAspectOrb } from './calculations/transit-events.js';
 import { analyzeChart } from './calculations/chart-analysis.js';
@@ -260,8 +261,10 @@ export function calculateComposite(params: {
     sunOrbBonus: params.sunOrbBonus,
     moonOrbBonus: params.moonOrbBonus,
   };
-  const chartA = calculateNatal({ ...params.personA, ...filterParams });
-  const chartB = calculateNatal({ ...params.personB, ...filterParams });
+  const houseSystem = params.personA.houseSystem;
+  const zodiacSystem = params.personA.zodiacSystem ?? 'tropical';
+  const chartA = calculateNatal({ ...params.personA, ...filterParams, houseSystem, zodiacSystem });
+  const chartB = calculateNatal({ ...params.personB, ...filterParams, houseSystem, zodiacSystem });
 
   const SIGN_NAMES: readonly SignName[] = [
     'ARI', 'TAU', 'GEM', 'CAN', 'LEO', 'VIR',
@@ -301,25 +304,27 @@ export function calculateComposite(params: {
   // and the caller is told how much of it rests on an assumption.
   const birthTimeAssumed = chartA.meta.birthTimeAssumed || chartB.meta.birthTimeAssumed;
 
-  if (chartA.angles && chartB.angles) {
+  if (chartA.angles && chartB.angles && chartA.houses && chartB.houses) {
     const compositeAsc = midpointLongitude(chartA.angles.asc, chartB.angles.asc);
     const compositeMc = midpointLongitude(chartA.angles.mc, chartB.angles.mc);
 
-    // Equal Houses from composite ASC — 12 cusps at 30° intervals.
-    // This ensures houses[0].longitude === compositeAsc, so the wheel
-    // rotation, house lines, and ASC label all agree.
-    const houses: import('./types.js').HouseCusp[] = Array.from({ length: 12 }, (_, i) => ({
-      house: i + 1,
-      longitude: (compositeAsc + i * 30) % 360,
-    }));
+    // Quadrant cusps average each natal house's offset from its ASC; Whole
+    // Sign starts at the ASC sign boundary, while Equal starts at the ASC.
+    const houses = compositeHouseCusps(
+      houseSystem, compositeAsc,
+      chartA.houses, chartA.angles.asc,
+      chartB.houses, chartB.angles.asc,
+    );
+    const mc = houseSystem === 'EQUAL' || houseSystem === 'WHOLE_SIGN'
+      ? compositeMc : houses[9].longitude;
 
     const midJd = (chartA.meta.julianDay + chartB.meta.julianDay) / 2;
 
     const angles: import('./types.js').ChartAngles = {
       asc: compositeAsc,
-      mc: compositeMc,
+      mc,
       dsc: (compositeAsc + 180) % 360,
-      ic: (compositeMc + 180) % 360,
+      ic: (mc + 180) % 360,
       vertex: midpointLongitude(chartA.angles.vertex, chartB.angles.vertex),
       eastPoint: midpointLongitude(chartA.angles.eastPoint, chartB.angles.eastPoint),
       partOfFortune: 0,
@@ -331,8 +336,8 @@ export function calculateComposite(params: {
       meta: {
         schemaVersion: SCHEMA_VERSION,
         calculatedAt: new Date().toISOString(),
-        houseSystem: params.personA.houseSystem,
-        zodiacSystem: params.personA.zodiacSystem ?? 'tropical',
+        houseSystem,
+        zodiacSystem,
         julianDay: midJd,
         birthTimeAssumed,
       },
@@ -346,8 +351,8 @@ export function calculateComposite(params: {
     meta: {
       schemaVersion: SCHEMA_VERSION,
       calculatedAt: new Date().toISOString(),
-      houseSystem: params.personA.houseSystem,
-      zodiacSystem: params.personA.zodiacSystem ?? 'tropical',
+      houseSystem,
+      zodiacSystem,
       julianDay: 0,
       birthTimeAssumed,
     },
