@@ -10293,7 +10293,7 @@
         "tags": [
           "charts"
         ],
-        "description": "Returns planetary positions directed by the solar arc (the distance the progressed Sun has traveled from its natal position).",
+        "description": "Returns planetary positions directed by the solar arc (the distance the progressed Sun has traveled from its natal position). `houses` and `angles` stay natal; `arc` and `directedAngles` give the arc and the directed angles.",
         "requestBody": {
           "required": true,
           "content": {
@@ -10949,6 +10949,48 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "arc": {
+                      "description": "Solar arc in degrees: how far the progressed Sun has moved from the natal Sun (0–360).",
+                      "type": "number"
+                    },
+                    "directedAngles": {
+                      "description": "The natal angles (ASC, MC, DSC, IC, vertex, east point, part of fortune) moved forward by `arc`. `angles` stays natal.",
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "asc": {
+                          "type": "number"
+                        },
+                        "mc": {
+                          "type": "number"
+                        },
+                        "dsc": {
+                          "type": "number"
+                        },
+                        "ic": {
+                          "type": "number"
+                        },
+                        "vertex": {
+                          "type": "number"
+                        },
+                        "eastPoint": {
+                          "type": "number"
+                        },
+                        "partOfFortune": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "asc",
+                        "mc",
+                        "dsc",
+                        "ic",
+                        "vertex",
+                        "eastPoint",
+                        "partOfFortune"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -10957,7 +10999,9 @@
                     "angles",
                     "aspects",
                     "meta",
-                    "aspectPatterns"
+                    "aspectPatterns",
+                    "arc",
+                    "directedAngles"
                   ],
                   "additionalProperties": false
                 }

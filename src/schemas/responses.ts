@@ -35,7 +35,7 @@ const HouseCuspSchema = z.object({
   longitude: z.number(),
 });
 
-const ChartAnglesSchema = z.object({
+export const ChartAnglesSchema = z.object({
   asc: z.number(),
   mc: z.number(),
   dsc: z.number(),
@@ -113,6 +113,15 @@ export const AspectPatternSchema = z.object({
 // A single chart whose own geometry carries special aspect patterns.
 export const NatalChartWithPatternsSchema = NatalChartDataSchema.extend({
   aspectPatterns: z.array(AspectPatternSchema),
+});
+
+// Solar arc: the natal-shaped fields keep their meaning (directed planets over
+// the natal houses and angles); `arc` and `directedAngles` are additive.
+export const SolarArcChartSchema = NatalChartWithPatternsSchema.extend({
+  arc: z.number().describe('Solar arc in degrees: how far the progressed Sun has moved from the natal Sun (0–360).'),
+  directedAngles: ChartAnglesSchema.nullable().describe(
+    'The natal angles (ASC, MC, DSC, IC, vertex, east point, part of fortune) moved forward by `arc`. `angles` stays natal.',
+  ),
 });
 
 export const TripleChartDataSchema = z.object({

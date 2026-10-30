@@ -1,4 +1,4 @@
-import type { PlanetPosition, SignName } from '../types.js';
+import type { ChartAngles, PlanetPosition, SignName } from '../types.js';
 
 const SIGN_NAMES: readonly SignName[] = [
   'ARI', 'TAU', 'GEM', 'CAN', 'LEO', 'VIR',
@@ -26,4 +26,22 @@ export function calculateSolarArcPositions(
       isRetrograde: false,
     };
   });
+}
+
+/**
+ * The natal angles carried forward by the same arc as the planets. Every
+ * field moves by `arc`, so the directed MC / ASC keep their natal distance to
+ * the directed planets; only their position against the natal chart changes.
+ */
+export function directSolarArcAngles(natalAngles: ChartAngles, arc: number): ChartAngles {
+  const direct = (longitude: number) => ((longitude + arc) % 360 + 360) % 360;
+  return {
+    asc: direct(natalAngles.asc),
+    mc: direct(natalAngles.mc),
+    dsc: direct(natalAngles.dsc),
+    ic: direct(natalAngles.ic),
+    vertex: direct(natalAngles.vertex),
+    eastPoint: direct(natalAngles.eastPoint),
+    partOfFortune: direct(natalAngles.partOfFortune),
+  };
 }
