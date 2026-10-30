@@ -49,6 +49,21 @@ describe('calculateCompositeTransit', () => {
     expect(ctSun.longitude).toBeCloseTo(compSun.longitude, 6);
   });
 
+  it('uses the same non-Equal composite house cusps as calculateComposite', () => {
+    const ct = calculateCompositeTransit({ personA, personB, transit });
+    const composite = calculateComposite({ personA, personB });
+    ct.composite.houses!.forEach((house, i) => {
+      expect(house.longitude).toBeCloseTo(composite.houses![i].longitude, 6);
+    });
+    const asc = ct.composite.angles!.asc;
+    const angularDistance = (a: number, b: number) => {
+      const gap = ((a - b) % 360 + 360) % 360;
+      return Math.min(gap, 360 - gap);
+    };
+    expect(ct.composite.houses!.some((house, i) =>
+      angularDistance(house.longitude, (asc + i * 30) % 360) > 1)).toBe(true);
+  });
+
   it('cross-aspects connect composite planets to transiting planets with applying flag', () => {
     const { composite, transit: tr, crossAspects } = calculateCompositeTransit({ personA, personB, transit });
     const compIds = new Set(composite.planets.map((p) => p.id));
