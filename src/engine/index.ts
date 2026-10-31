@@ -2,10 +2,11 @@ import { calcPlanets, calcHouses } from './sweph-adapter.js';
 import { detectAspects, detectCrossAspects } from './calculations/aspects.js';
 import type { AspectConfig } from './calculations/aspects.js';
 import { getProgressedJulianDay } from './calculations/progressions.js';
-import { calculateSolarArcPositions } from './calculations/solar-arc.js';
+import { calculateSolarArcPositions, directSolarArcAngles } from './calculations/solar-arc.js';
 import { findSolarReturnJD } from './calculations/solar-return.js';
 import { findLunarReturnJD, listLunarReturnsInYear } from './calculations/lunar-return.js';
 import { midpointLongitude } from './calculations/composite.js';
+import { compositeHouseCusps } from './calculations/composite-houses.js';
 import { calculateVocPeriods } from './calculations/voc-moon.js';
 import { computeTransitEvents, shiftedAnglesFor, signedAspectOrb } from './calculations/transit-events.js';
 import { analyzeChart } from './calculations/chart-analysis.js';
@@ -20,7 +21,7 @@ import { resolveEnabledBodies } from './calculations/body-filter.js';
 import { buildJulianDay, toJulianDay, fromJulianDay, parseDateString } from '../utils/date.js';
 import { SCHEMA_VERSION } from './types.js';
 import type {
-  NatalChartData, HouseSystem, ZodiacSystem, TripleChartData,
+  NatalChartData, SolarArcChartData, HouseSystem, ZodiacSystem, TripleChartData,
   SynastryChartData, CompositeTransitChartData, EphemerisData, EphemerisEvent,
   VocMoonData, AstromapData, TransitEventsData,
   PlanetId, PointId, PlanetPosition, AspectType, SignName,
@@ -90,7 +91,7 @@ export type NatalChartWithPatterns = NatalChartData & { aspectPatterns: AspectPa
  * transit) so their responses carry special aspect shapes like natal does.
  * Inter-chart (synastry / transit-overlay) patterns are out of scope (phase 2).
  */
-export function attachAspectPatterns(chart: NatalChartData): NatalChartWithPatterns {
+export function attachAspectPatterns<T extends NatalChartData>(chart: T): T & { aspectPatterns: AspectPattern[] } {
   return {
     ...chart,
     aspectPatterns: detectAspectPatterns(chart.planets, chart.aspects, {}, chart.houses),
@@ -260,8 +261,10 @@ export function calculateComposite(params: {
     sunOrbBonus: params.sunOrbBonus,
     moonOrbBonus: params.moonOrbBonus,
   };
-  const chartA = calculateNatal({ ...params.personA, ...filterParams });
-  const chartB = calculateNatal({ ...params.personB, ...filterParams });
+  const houseSystem = params.personA.houseSystem;
+  const zodiacSystem = params.personA.zodiacSystem ?? 'tropical';
+  const chartA = calculateNatal({ ...params.personA, ...filterParams, houseSystem, zodiacSystem });
+  const chartB = calculateNatal({ ...params.personB, ...filterParams, houseSystem, zodiacSystem });
 
   const SIGN_NAMES: readonly SignName[] = [
     'ARI', 'TAU', 'GEM', 'CAN', 'LEO', 'VIR',
@@ -301,25 +304,27 @@ export function calculateComposite(params: {
   // and the caller is told how much of it rests on an assumption.
   const birthTimeAssumed = chartA.meta.birthTimeAssumed || chartB.meta.birthTimeAssumed;
 
-  if (chartA.angles && chartB.angles) {
+  if (chartA.angles && chartB.angles && chartA.houses && chartB.houses) {
     const compositeAsc = midpointLongitude(chartA.angles.asc, chartB.angles.asc);
     const compositeMc = midpointLongitude(chartA.angles.mc, chartB.angles.mc);
 
-    // Equal Houses from composite ASC — 12 cusps at 30° intervals.
-    // This ensures houses[0].longitude === compositeAsc, so the wheel
-    // rotation, house lines, and ASC label all agree.
-    const houses: import('./types.js').HouseCusp[] = Array.from({ length: 12 }, (_, i) => ({
-      house: i + 1,
-      longitude: (compositeAsc + i * 30) % 360,
-    }));
+    // Quadrant cusps average each natal house's offset from its ASC; Whole
+    // Sign starts at the ASC sign boundary, while Equal starts at the ASC.
+    const houses = compositeHouseCusps(
+      houseSystem, compositeAsc,
+      chartA.houses, chartA.angles.asc,
+      chartB.houses, chartB.angles.asc,
+    );
+    const mc = houseSystem === 'EQUAL' || houseSystem === 'WHOLE_SIGN'
+      ? compositeMc : houses[9].longitude;
 
     const midJd = (chartA.meta.julianDay + chartB.meta.julianDay) / 2;
 
     const angles: import('./types.js').ChartAngles = {
       asc: compositeAsc,
-      mc: compositeMc,
+      mc,
       dsc: (compositeAsc + 180) % 360,
-      ic: (compositeMc + 180) % 360,
+      ic: (mc + 180) % 360,
       vertex: midpointLongitude(chartA.angles.vertex, chartB.angles.vertex),
       eastPoint: midpointLongitude(chartA.angles.eastPoint, chartB.angles.eastPoint),
       partOfFortune: 0,
@@ -331,8 +336,8 @@ export function calculateComposite(params: {
       meta: {
         schemaVersion: SCHEMA_VERSION,
         calculatedAt: new Date().toISOString(),
-        houseSystem: params.personA.houseSystem,
-        zodiacSystem: params.personA.zodiacSystem ?? 'tropical',
+        houseSystem,
+        zodiacSystem,
         julianDay: midJd,
         birthTimeAssumed,
       },
@@ -346,8 +351,8 @@ export function calculateComposite(params: {
     meta: {
       schemaVersion: SCHEMA_VERSION,
       calculatedAt: new Date().toISOString(),
-      houseSystem: params.personA.houseSystem,
-      zodiacSystem: params.personA.zodiacSystem ?? 'tropical',
+      houseSystem,
+      zodiacSystem,
       julianDay: 0,
       birthTimeAssumed,
     },
@@ -383,7 +388,7 @@ export function calculateSolarArc(params: {
   utcOffsetMinutes: number; houseSystem: HouseSystem;
   zodiacSystem?: ZodiacSystem;
   progressedDate: string;
-} & EngineFilterParams): NatalChartData {
+} & EngineFilterParams): SolarArcChartData {
   const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
   const birthTimeAssumed = params.birthTime === null;
 
@@ -411,9 +416,12 @@ export function calculateSolarArc(params: {
   // Same noon assumption as natal when the birth time is unknown.
   const { houses, angles } = calcHouses(natalJd, params.lat, params.lon, params.houseSystem, zodiac);
   computePartOfFortune(angles, directedPlanets);
+  const arc = ((progressedSun.longitude - natalSun.longitude) % 360 + 360) % 360;
 
   return {
     planets: directedPlanets, houses, angles, aspects,
+    arc,
+    directedAngles: angles ? directSolarArcAngles(angles, arc) : null,
     meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: natalJd, birthTimeAssumed },
   };
 }

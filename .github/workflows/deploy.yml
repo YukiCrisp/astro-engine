@@ -12,3 +12,30 @@ jobs:
       - run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  # The deploy succeeded: close the 「dev済み」 issues (here and in astrology-app)
+  # whose merges are now in production. Closing an astrology-app issue with
+  # ISSUE_FLOW_TOKEN starts its sync-issue-closed.yml, which publishes the
+  # announcement. Safe to re-run. See astrology-app docs/announcements-operations.md.
+  close-released-issues:
+    needs: deploy
+    runs-on: ubuntu-latest
+    concurrency:
+      group: close-released-issues
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: YukiCrisp/astrology-app
+          ref: dev
+          token: ${{ secrets.ISSUE_FLOW_TOKEN }}
+          sparse-checkout: scripts/issue-flow
+          path: .issue-flow
+      - run: node .issue-flow/scripts/issue-flow/issue-flow.mjs close-released "$GITHUB_REPOSITORY" "$GITHUB_SHA"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CROSS_TOKEN: ${{ secrets.ISSUE_FLOW_TOKEN }}
+          TARGET_REPOS: ${{ github.repository }},YukiCrisp/astrology-app
