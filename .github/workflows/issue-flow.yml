@@ -1,0 +1,58 @@
+name: Issue flow
+
+# Every PR to dev closes an issue (here or in YukiCrisp/astrology-app), and every
+# such issue says what to announce. Merged into dev, the issue gets 「dev済み」;
+# the production deploy closes it (deploy.yml). The script and the rules live in
+# astrology-app: scripts/issue-flow/ and docs/announcements-operations.md.
+#
+# Needs the ISSUE_FLOW_TOKEN secret (read this repo's code, read and write the
+# issues and commit statuses of the three repos). An issue in astrology-app that
+# gets its announcement later is re-checked from there; "Re-run" here also works.
+on:
+  pull_request:
+    branches: [dev]
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled, closed]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+  statuses: write
+
+jobs:
+  check-pr:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: issue-flow-check-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: YukiCrisp/astrology-app
+          ref: dev
+          token: ${{ secrets.ISSUE_FLOW_TOKEN }}
+          sparse-checkout: scripts/issue-flow
+          path: .issue-flow
+      - run: node .issue-flow/scripts/issue-flow/issue-flow.mjs check-pr "$GITHUB_REPOSITORY" "$PR_NUMBER"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CROSS_TOKEN: ${{ secrets.ISSUE_FLOW_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+
+  mark-dev:
+    if: github.event.action == 'closed' && github.event.pull_request.merged
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: YukiCrisp/astrology-app
+          ref: dev
+          token: ${{ secrets.ISSUE_FLOW_TOKEN }}
+          sparse-checkout: scripts/issue-flow
+          path: .issue-flow
+      - run: node .issue-flow/scripts/issue-flow/issue-flow.mjs mark-dev "$GITHUB_REPOSITORY" "$PR_NUMBER"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CROSS_TOKEN: ${{ secrets.ISSUE_FLOW_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
