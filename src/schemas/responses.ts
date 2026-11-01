@@ -86,6 +86,9 @@ export const NatalChartDataSchema = z.object({
     birthTimeAssumed: z.boolean().describe(
       'True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.',
     ),
+    houseSystemFallback: z.enum(['PORPHYRY']).optional().describe(
+      'Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry.',
+    ),
   }),
 });
 
