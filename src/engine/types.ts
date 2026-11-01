@@ -106,6 +106,13 @@ export interface NatalChartData {
      * this flag is the only thing that distinguishes measured from assumed.
      */
     birthTimeAssumed: boolean;
+    /**
+     * Set when the requested `houseSystem` could not be calculated at this latitude and
+     * the houses were computed with another system instead. Placidus and Koch have no
+     * solution inside the polar circles, where Swiss Ephemeris substitutes Porphyry.
+     * Absent when the requested system was used.
+     */
+    houseSystemFallback?: 'PORPHYRY';
   };
 }
 

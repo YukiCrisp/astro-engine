@@ -200,7 +200,7 @@ export function calcFixedStar(starName: string, jd: number): FixedStarRaw | null
 
 export function calcHouses(
   jd: number, lat: number, lon: number, system: HouseSystem, zodiacSystem?: ZodiacSystem
-): { houses: HouseCusp[]; angles: ChartAngles } {
+): { houses: HouseCusp[]; angles: ChartAngles; houseSystemFallback?: 'PORPHYRY' } {
   const hsysFlags = zodiacSystem === 'sidereal' ? constants.SEFLG_SIDEREAL : 0;
   if (zodiacSystem === 'sidereal') {
     enableSiderealMode();
@@ -223,5 +223,7 @@ export function calcHouses(
     eastPoint,
     partOfFortune: 0, // computed later in engine/index.ts after planets are known
   };
-  return { houses, angles };
+  // Inside the polar circles Placidus and Koch have no solution; Swiss Ephemeris then
+  // computes Porphyry instead and reports it only through the return flag.
+  return result.flag < 0 ? { houses, angles, houseSystemFallback: 'PORPHYRY' } : { houses, angles };
 }
