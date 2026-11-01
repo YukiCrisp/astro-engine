@@ -800,8 +800,14 @@ export function calculateAstromap(params: {
   birthTime: string;
   utcOffsetMinutes: number;
   enabledPlanets?: PlanetId[];
+  progressedDate?: string;
 }): AstromapData {
-  const jd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
+  // Progressed lines: the same astrocartography at the progressed moment, which is
+  // how `calculateProgressed` gets its planets and angles — so a progressed line runs
+  // exactly where that chart's progressed planet would sit on the angle.
+  const jd = params.progressedDate
+    ? getProgressedJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes, params.progressedDate)
+    : buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
   const requested = params.enabledPlanets ?? [...ASTROMAP_PLANETS];
   const planets = requested.filter((id) => (ASTROMAP_PLANETS as readonly PlanetId[]).includes(id));
   const lines = computeAstromapLines(jd, planets);
