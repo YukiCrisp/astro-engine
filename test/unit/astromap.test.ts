@@ -9,7 +9,8 @@ import {
   ASTROMAP_PLANETS,
 } from '../../src/engine/calculations/astrocartography.js';
 import { buildJulianDay } from '../../src/utils/date.js';
-import { calculateAstromap } from '../../src/engine/index.js';
+import { calculateAstromap, calculateProgressed } from '../../src/engine/index.js';
+import { getProgressedJulianDay } from '../../src/engine/calculations/progressions.js';
 import { SCHEMA_VERSION } from '../../src/engine/types.js';
 
 beforeAll(() => {
@@ -183,5 +184,66 @@ describe('calculateAstromap response contract', () => {
     const data = calculateAstromap({ birthDate: '1879-03-14', birthTime: '11:30', utcOffsetMinutes: 54 });
     expect(data.meta.schemaVersion).toBe(SCHEMA_VERSION);
     expect(Array.isArray(data.parans)).toBe(true);
+  });
+});
+
+describe('calculateAstromap progressed lines', () => {
+  const birth = { birthDate: '1990-01-15', birthTime: '12:00', utcOffsetMinutes: 540 };
+
+  it('computes at the progressed moment when progressedDate is set', () => {
+    const data = calculateAstromap({ ...birth, progressedDate: '2026-11-01' });
+    const expected = getProgressedJulianDay(birth.birthDate, birth.birthTime, birth.utcOffsetMinutes, '2026-11-01');
+    expect(data.meta.julianDay).toBeCloseTo(expected, 9);
+    // ~36.8 years of life → ~36.8 days after birth.
+    const natal = calculateAstromap(birth);
+    expect(data.meta.julianDay - natal.meta.julianDay).toBeCloseTo(36.8, 1);
+  });
+
+  it('puts each progressed MC line where the progressed chart has that planet on the MC', () => {
+    // At the progressed moment, a place on the progressed Sun's MC line has the Sun
+    // culminating: the progressed chart computed there shows MC ≈ Sun.
+    const data = calculateAstromap({ ...birth, progressedDate: '2026-11-01', enabledPlanets: ['SUN'] });
+    const mc = data.lines.find((l) => l.planetId === 'SUN' && l.lineType === 'MC')!;
+    const lon = mc.points[0].lon;
+    const chart = calculateProgressed({
+      ...birth, lat: 0, lon, houseSystem: 'PLACIDUS', progressedDate: '2026-11-01', enabledPlanets: ['SUN'],
+    });
+    const sun = chart.planets.find((p) => p.id === 'SUN')!.longitude;
+    expect(Math.abs(angularDiff(chart.angles!.mc, sun))).toBeLessThan(0.5);
+  });
+
+  it('leaves natal lines unchanged without progressedDate', () => {
+    const a = calculateAstromap(birth);
+    const b = calculateAstromap({ ...birth, progressedDate: undefined });
+    expect(b.meta.julianDay).toBe(a.meta.julianDay);
+  });
+});
+
+describe('calculateAstromap transit lines', () => {
+  const birth = { birthDate: '1990-01-15', birthTime: '12:00', utcOffsetMinutes: 540 };
+
+  it('takes the planets at noon UT on the transit date', () => {
+    const data = calculateAstromap({ ...birth, transitDate: '2026-11-01' });
+    expect(data.meta.julianDay).toBeCloseTo(buildJulianDay('2026-11-01', '12:00', 0), 9);
+  });
+
+  it('places a transit MC line where the birth chart relocated there has that planet on its MC', () => {
+    const data = calculateAstromap({ ...birth, transitDate: '2026-11-01', enabledPlanets: ['JUPITER'] });
+    const lon = data.lines.find((l) => l.planetId === 'JUPITER' && l.lineType === 'MC')!.points[0].lon;
+    // The birth chart cast at that longitude (birth moment, any latitude) …
+    const birthJd = buildJulianDay(birth.birthDate, birth.birthTime, birth.utcOffsetMinutes);
+    const ramc = normalizeLon(gmstDeg(birthJd) + lon);
+    // … culminates the right ascension of transit Jupiter.
+    const transit = calculateAstromap({ birthDate: '2026-11-01', birthTime: '12:00', utcOffsetMinutes: 0, enabledPlanets: ['JUPITER'] });
+    const transitMcLon = transit.lines.find((l) => l.lineType === 'MC')!.points[0].lon;
+    const transitRa = normalizeLon(gmstDeg(buildJulianDay('2026-11-01', '12:00', 0)) + transitMcLon);
+    expect(Math.abs(angularDiff(ramc, transitRa))).toBeLessThan(1e-6);
+  });
+
+  it('differs from both the natal lines and the transit-moment sky', () => {
+    const natal = calculateAstromap({ ...birth, enabledPlanets: ['SATURN'] });
+    const tr = calculateAstromap({ ...birth, transitDate: '2026-11-01', enabledPlanets: ['SATURN'] });
+    const mcLon = (d: typeof natal) => d.lines.find((l) => l.lineType === 'MC')!.points[0].lon;
+    expect(Math.abs(angularDiff(mcLon(tr), mcLon(natal)))).toBeGreaterThan(1);
   });
 });
