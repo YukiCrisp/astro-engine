@@ -218,3 +218,32 @@ describe('calculateAstromap progressed lines', () => {
     expect(b.meta.julianDay).toBe(a.meta.julianDay);
   });
 });
+
+describe('calculateAstromap transit lines', () => {
+  const birth = { birthDate: '1990-01-15', birthTime: '12:00', utcOffsetMinutes: 540 };
+
+  it('takes the planets at noon UT on the transit date', () => {
+    const data = calculateAstromap({ ...birth, transitDate: '2026-11-01' });
+    expect(data.meta.julianDay).toBeCloseTo(buildJulianDay('2026-11-01', '12:00', 0), 9);
+  });
+
+  it('places a transit MC line where the birth chart relocated there has that planet on its MC', () => {
+    const data = calculateAstromap({ ...birth, transitDate: '2026-11-01', enabledPlanets: ['JUPITER'] });
+    const lon = data.lines.find((l) => l.planetId === 'JUPITER' && l.lineType === 'MC')!.points[0].lon;
+    // The birth chart cast at that longitude (birth moment, any latitude) …
+    const birthJd = buildJulianDay(birth.birthDate, birth.birthTime, birth.utcOffsetMinutes);
+    const ramc = normalizeLon(gmstDeg(birthJd) + lon);
+    // … culminates the right ascension of transit Jupiter.
+    const transit = calculateAstromap({ birthDate: '2026-11-01', birthTime: '12:00', utcOffsetMinutes: 0, enabledPlanets: ['JUPITER'] });
+    const transitMcLon = transit.lines.find((l) => l.lineType === 'MC')!.points[0].lon;
+    const transitRa = normalizeLon(gmstDeg(buildJulianDay('2026-11-01', '12:00', 0)) + transitMcLon);
+    expect(Math.abs(angularDiff(ramc, transitRa))).toBeLessThan(1e-6);
+  });
+
+  it('differs from both the natal lines and the transit-moment sky', () => {
+    const natal = calculateAstromap({ ...birth, enabledPlanets: ['SATURN'] });
+    const tr = calculateAstromap({ ...birth, transitDate: '2026-11-01', enabledPlanets: ['SATURN'] });
+    const mcLon = (d: typeof natal) => d.lines.find((l) => l.lineType === 'MC')!.points[0].lon;
+    expect(Math.abs(angularDiff(mcLon(tr), mcLon(natal)))).toBeGreaterThan(1);
+  });
+});

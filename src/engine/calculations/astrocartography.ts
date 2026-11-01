@@ -192,22 +192,32 @@ function toPoint(p: CirclePoint): AstromapPoint {
  * Passing a sidereal longitude here would rotate every line by the ayanamsha
  * and place planets at the wrong terrestrial longitude — see ENGA-1255.
  */
-export function computeAstromapLines(jdUt: number, planetIds: PlanetId[]): AstromapLine[] {
+export function computeAstromapLines(
+  jdUt: number,
+  planetIds: PlanetId[],
+  /**
+   * The moment whose Earth rotation (sidereal time) places the lines. Defaults to
+   * `jdUt`. Transit lines take the planets at the transit moment but the rotation at
+   * birth, so each line marks where that planet sits on the birth chart's angles once
+   * the chart is relocated there (the Cyclo*Carto*Graphy convention).
+   */
+  rotationJdUt: number = jdUt,
+): AstromapLine[] {
   const planets = planetIds.filter((id) => ASTROMAP_PLANETS_SET.has(id));
   if (planets.length === 0) return [];
 
-  const gmst = gmstDeg(jdUt);
+  const gmst = gmstDeg(rotationJdUt);
   const lines: AstromapLine[] = [];
 
   for (const id of planets) {
     const p = calcSinglePlanet(jdUt, id);
     const ra = eclipticToRA(p.longitude, p.latitude);
 
-    const { mc, ic } = mcLines(jdUt, ra);
+    const { mc, ic } = mcLines(rotationJdUt, ra);
 
     const subLonEast = normalizeLon(ra - gmst);
     const circle = horizonCircle(p.declination, subLonEast);
-    const { ac, dc } = horizonHalves(jdUt, circle, p.longitude);
+    const { ac, dc } = horizonHalves(rotationJdUt, circle, p.longitude);
 
     lines.push({ planetId: id, lineType: 'MC', points: mc });
     lines.push({ planetId: id, lineType: 'IC', points: ic });
