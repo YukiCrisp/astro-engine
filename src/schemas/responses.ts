@@ -13,7 +13,8 @@ const AspectTypeEnum = z.enum([
 ]);
 
 const ArabicPartIdEnum = z.enum([
-  'PART_OF_FORTUNE', 'PART_OF_SPIRIT', 'PART_OF_EROS', 'PART_OF_MARRIAGE',
+  'PART_OF_FORTUNE', 'PART_OF_SPIRIT', 'PART_OF_EROS', 'PART_OF_NECESSITY',
+  'PART_OF_COURAGE', 'PART_OF_VICTORY', 'PART_OF_NEMESIS', 'PART_OF_MARRIAGE',
 ]);
 
 export { PlanetIdEnum, AspectTypeEnum, ArabicPartIdEnum };

@@ -52,18 +52,22 @@ function computeArabicParts(
   planets: import('./types.js').PlanetPosition[],
   enabledParts: ArabicPartId[],
 ): import('./types.js').ArabicPartResult[] {
-  const sun = planets.find(p => p.id === 'SUN');
-  const moon = planets.find(p => p.id === 'MOON');
-  const venus = planets.find(p => p.id === 'VENUS');
-  if (!sun || !moon || !venus) return [];
+  const lonOf = (id: PlanetId) => planets.find(p => p.id === id)?.longitude;
+  const sun = lonOf('SUN');
+  const moon = lonOf('MOON');
+  if (sun === undefined || moon === undefined) return [];
 
   // Sect from the ASC–DSC axis, the same rule computePartOfFortune uses, so the
   // wheel's ⊗ and the PART_OF_FORTUNE entry always agree.
-  const isDayChart = isDayChartByAngles(sun.longitude, angles.asc);
+  const isDayChart = isDayChartByAngles(sun, angles.asc);
 
   return calculateArabicParts(
-    angles.asc, sun.longitude, moon.longitude,
-    venus.longitude, angles.dsc, isDayChart, enabledParts,
+    {
+      asc: angles.asc, dsc: angles.dsc, sun, moon,
+      mercury: lonOf('MERCURY'), venus: lonOf('VENUS'), mars: lonOf('MARS'),
+      jupiter: lonOf('JUPITER'), saturn: lonOf('SATURN'),
+    },
+    isDayChart, enabledParts,
   );
 }
 
