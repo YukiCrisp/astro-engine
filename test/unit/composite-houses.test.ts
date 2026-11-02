@@ -119,6 +119,55 @@ describe('calculateComposite houses', () => {
     });
   });
 
+  it('counts Equal (MC) houses from the composite MC and Vehlow houses from 15 degrees before the ASC', () => {
+    const natalA = calculateNatal(personA);
+    const natalB = calculateNatal(personB);
+    const mcMidpoint = midpointLongitude(natalA.angles!.mc, natalB.angles!.mc);
+    const equalMc = calculateComposite({
+      personA: { ...personA, houseSystem: 'EQUAL_MC' },
+      personB: { ...personB, houseSystem: 'EQUAL_MC' },
+    });
+    expect(equalMc.angles!.mc).toBeCloseTo(mcMidpoint, 6);
+    equalMc.houses!.forEach((house, i) => {
+      expect(house.longitude).toBeCloseTo(normalize360(mcMidpoint + (i - 9) * 30), 6);
+    });
+    const vehlow = calculateComposite({
+      personA: { ...personA, houseSystem: 'VEHLOW' },
+      personB: { ...personB, houseSystem: 'VEHLOW' },
+    });
+    vehlow.houses!.forEach((house, i) => {
+      expect(house.longitude).toBeCloseTo(normalize360(vehlow.angles!.asc - 15 + i * 30), 6);
+    });
+  });
+
+  it('averages Meridian and Morinus cusps from the MC, not the ASC', () => {
+    for (const houseSystem of ['MERIDIAN', 'MORINUS'] as const) {
+      const natalA = calculateNatal({ ...personA, houseSystem });
+      const natalB = calculateNatal({ ...personB, houseSystem });
+      const chart = calculateComposite({ personA: { ...personA, houseSystem }, personB: { ...personB, houseSystem } });
+      const mcMidpoint = midpointLongitude(natalA.angles!.mc, natalB.angles!.mc);
+      expect(chart.angles!.mc).toBeCloseTo(mcMidpoint, 6);
+      chart.houses!.forEach((house, i) => {
+        // Each composite cusp lies between the two natal cusps' positions relative to their MCs.
+        const relA = normalize360(natalA.houses![i].longitude - natalA.angles!.mc);
+        const relB = normalize360(natalB.houses![i].longitude - natalB.angles!.mc);
+        const rel = normalize360(house.longitude - mcMidpoint);
+        const signed = (x: number) => ((x - (i - 9) * 30 + 540) % 360) - 180;
+        expect(signed(rel)).toBeCloseTo((signed(relA) + signed(relB)) / 2, 6);
+      });
+      expectOrderedCusps(chart.houses!);
+    }
+  });
+
+  it('puts the ASC and MC on cusps 1 and 10 for Topocentric and Alcabitius', () => {
+    for (const houseSystem of ['TOPOCENTRIC', 'ALCABITIUS'] as const) {
+      const chart = calculateComposite({ personA: { ...personA, houseSystem }, personB: { ...personB, houseSystem } });
+      expect(chart.houses![0].longitude).toBeCloseTo(chart.angles!.asc, 6);
+      expect(chart.houses![9].longitude).toBeCloseTo(chart.angles!.mc, 6);
+      expectOrderedCusps(chart.houses!);
+    }
+  });
+
   it('uses person A house system for both natal source charts', () => {
     const mixed = calculateComposite({
       personA,

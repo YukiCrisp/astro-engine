@@ -6,7 +6,7 @@ import { calculateSolarArcPositions, directSolarArcAngles } from './calculations
 import { findSolarReturnJD } from './calculations/solar-return.js';
 import { findLunarReturnJD, listLunarReturnsInYear } from './calculations/lunar-return.js';
 import { midpointLongitude } from './calculations/composite.js';
-import { compositeHouseCusps } from './calculations/composite-houses.js';
+import { compositeHouseCusps, compositeMcIsTenthCusp } from './calculations/composite-houses.js';
 import { midpointJulianDay, midpointPlace } from './calculations/davison.js';
 import { calculateVocPeriods } from './calculations/voc-moon.js';
 import { computeTransitEvents, shiftedAnglesFor, signedAspectOrb } from './calculations/transit-events.js';
@@ -53,18 +53,22 @@ function computeArabicParts(
   planets: import('./types.js').PlanetPosition[],
   enabledParts: ArabicPartId[],
 ): import('./types.js').ArabicPartResult[] {
-  const sun = planets.find(p => p.id === 'SUN');
-  const moon = planets.find(p => p.id === 'MOON');
-  const venus = planets.find(p => p.id === 'VENUS');
-  if (!sun || !moon || !venus) return [];
+  const lonOf = (id: PlanetId) => planets.find(p => p.id === id)?.longitude;
+  const sun = lonOf('SUN');
+  const moon = lonOf('MOON');
+  if (sun === undefined || moon === undefined) return [];
 
   // Sect from the ASC–DSC axis, the same rule computePartOfFortune uses, so the
   // wheel's ⊗ and the PART_OF_FORTUNE entry always agree.
-  const isDayChart = isDayChartByAngles(sun.longitude, angles.asc);
+  const isDayChart = isDayChartByAngles(sun, angles.asc);
 
   return calculateArabicParts(
-    angles.asc, sun.longitude, moon.longitude,
-    venus.longitude, angles.dsc, isDayChart, enabledParts,
+    {
+      asc: angles.asc, dsc: angles.dsc, sun, moon,
+      mercury: lonOf('MERCURY'), venus: lonOf('VENUS'), mars: lonOf('MARS'),
+      jupiter: lonOf('JUPITER'), saturn: lonOf('SATURN'),
+    },
+    isDayChart, enabledParts,
   );
 }
 
@@ -309,15 +313,14 @@ export function calculateComposite(params: {
     const compositeAsc = midpointLongitude(chartA.angles.asc, chartB.angles.asc);
     const compositeMc = midpointLongitude(chartA.angles.mc, chartB.angles.mc);
 
-    // Quadrant cusps average each natal house's offset from its ASC; Whole
-    // Sign starts at the ASC sign boundary, while Equal starts at the ASC.
+    // Quadrant cusps average each natal house's offset from its ASC; the
+    // equal systems count from the composite ASC or MC (see compositeHouseCusps).
     const houses = compositeHouseCusps(
-      houseSystem, compositeAsc,
-      chartA.houses, chartA.angles.asc,
-      chartB.houses, chartB.angles.asc,
+      houseSystem, { asc: compositeAsc, mc: compositeMc },
+      chartA.houses, chartA.angles,
+      chartB.houses, chartB.angles,
     );
-    const mc = houseSystem === 'EQUAL' || houseSystem === 'WHOLE_SIGN'
-      ? compositeMc : houses[9].longitude;
+    const mc = compositeMcIsTenthCusp(houseSystem) ? houses[9].longitude : compositeMc;
 
     const midJd = (chartA.meta.julianDay + chartB.meta.julianDay) / 2;
 

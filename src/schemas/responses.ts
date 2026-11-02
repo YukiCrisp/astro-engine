@@ -13,10 +13,17 @@ const AspectTypeEnum = z.enum([
 ]);
 
 const ArabicPartIdEnum = z.enum([
-  'PART_OF_FORTUNE', 'PART_OF_SPIRIT', 'PART_OF_EROS', 'PART_OF_MARRIAGE',
+  'PART_OF_FORTUNE', 'PART_OF_SPIRIT', 'PART_OF_EROS', 'PART_OF_NECESSITY',
+  'PART_OF_COURAGE', 'PART_OF_VICTORY', 'PART_OF_NEMESIS', 'PART_OF_MARRIAGE',
 ]);
 
-export { PlanetIdEnum, AspectTypeEnum, ArabicPartIdEnum };
+// Letters Swiss Ephemeris uses for each live in sweph-adapter.ts (HOUSE_SYSTEM_MAP).
+const HouseSystemEnum = z.enum([
+  'PLACIDUS', 'WHOLE_SIGN', 'KOCH', 'REGIOMONTANUS', 'CAMPANUS', 'EQUAL', 'PORPHYRY',
+  'TOPOCENTRIC', 'ALCABITIUS', 'MORINUS', 'MERIDIAN', 'EQUAL_MC', 'VEHLOW',
+]);
+
+export { PlanetIdEnum, AspectTypeEnum, ArabicPartIdEnum, HouseSystemEnum };
 
 const PlanetPositionSchema = z.object({
   id: PlanetIdEnum,
@@ -80,14 +87,14 @@ export const NatalChartDataSchema = z.object({
   meta: z.object({
     schemaVersion: z.number(),
     calculatedAt: z.string(),
-    houseSystem: z.enum(['PLACIDUS', 'WHOLE_SIGN', 'KOCH', 'REGIOMONTANUS', 'CAMPANUS', 'EQUAL', 'PORPHYRY']),
+    houseSystem: HouseSystemEnum,
     zodiacSystem: z.enum(['tropical', 'sidereal']).optional(),
     julianDay: z.number(),
     birthTimeAssumed: z.boolean().describe(
       'True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.',
     ),
     houseSystemFallback: z.enum(['PORPHYRY']).optional().describe(
-      'Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry.',
+      'Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.',
     ),
   }),
 });
