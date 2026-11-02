@@ -114,11 +114,11 @@ export function calculateNatal(params: {
   // Julian day then rests on the local-noon assumption in `buildJulianDay`,
   // and `meta.birthTimeAssumed` reports that so callers can label the result
   // instead of silently reading it as measured (ENGA-2976, decision C).
-  const { houses, angles } = calcHouses(jd, params.lat, params.lon, params.houseSystem, zodiac);
+  const { houses, angles, houseSystemFallback } = calcHouses(jd, params.lat, params.lon, params.houseSystem, zodiac);
   computePartOfFortune(angles, planets);
   const result: NatalChartData = {
     planets, houses, angles, aspects,
-    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd, birthTimeAssumed },
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd, birthTimeAssumed, ...(houseSystemFallback ? { houseSystemFallback } : {}) },
   };
   if (params.enabledArabicParts && params.enabledArabicParts.length > 0 && houses) {
     result.arabicParts = computeArabicParts(angles, planets, params.enabledArabicParts);
@@ -157,11 +157,11 @@ export function calculateProgressed(params: {
   // Same noon assumption as natal — see `calculateNatal`.
   const houseLat = params.relocatedLat ?? params.lat;
   const houseLon = params.relocatedLon ?? params.lon;
-  const { houses, angles } = calcHouses(jd, houseLat, houseLon, params.houseSystem, zodiac);
+  const { houses, angles, houseSystemFallback } = calcHouses(jd, houseLat, houseLon, params.houseSystem, zodiac);
   computePartOfFortune(angles, planets);
   return {
     planets, houses, angles, aspects,
-    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd, birthTimeAssumed },
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd, birthTimeAssumed, ...(houseSystemFallback ? { houseSystemFallback } : {}) },
   };
 }
 
@@ -189,11 +189,11 @@ export function calculateTransit(params: {
     };
   }
 
-  const { houses, angles } = calcHouses(jd, params.lat, params.lon, params.houseSystem, zodiac);
+  const { houses, angles, houseSystemFallback } = calcHouses(jd, params.lat, params.lon, params.houseSystem, zodiac);
   computePartOfFortune(angles, planets);
   return {
     planets, houses, angles, aspects,
-    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd, birthTimeAssumed: false },
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: jd, birthTimeAssumed: false, ...(houseSystemFallback ? { houseSystemFallback } : {}) },
   };
 }
 
@@ -414,7 +414,7 @@ export function calculateSolarArc(params: {
 
   // For houses, use natal houses (solar arc doesn't progress houses).
   // Same noon assumption as natal when the birth time is unknown.
-  const { houses, angles } = calcHouses(natalJd, params.lat, params.lon, params.houseSystem, zodiac);
+  const { houses, angles, houseSystemFallback } = calcHouses(natalJd, params.lat, params.lon, params.houseSystem, zodiac);
   computePartOfFortune(angles, directedPlanets);
   const arc = ((progressedSun.longitude - natalSun.longitude) % 360 + 360) % 360;
 
@@ -422,7 +422,7 @@ export function calculateSolarArc(params: {
     planets: directedPlanets, houses, angles, aspects,
     arc,
     directedAngles: angles ? directSolarArcAngles(angles, arc) : null,
-    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: natalJd, birthTimeAssumed },
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString(), houseSystem: params.houseSystem, zodiacSystem: zodiac, julianDay: natalJd, birthTimeAssumed, ...(houseSystemFallback ? { houseSystemFallback } : {}) },
   };
 }
 
@@ -456,7 +456,7 @@ export function calculateSolarReturn(params: {
     zodiac,
   );
   const aspects = detectAspects(planets, 1, toAspectConfig(params));
-  const { houses, angles } = calcHouses(solarReturnJd, params.returnLat, params.returnLon, params.houseSystem, zodiac);
+  const { houses, angles, houseSystemFallback } = calcHouses(solarReturnJd, params.returnLat, params.returnLon, params.houseSystem, zodiac);
   computePartOfFortune(angles, planets);
 
   return {
@@ -471,6 +471,7 @@ export function calculateSolarReturn(params: {
       // at the assumed noon when the birth time is unknown — so the whole
       // return chart (not just its houses) inherits the assumption.
       birthTimeAssumed: params.birthTime === null,
+      ...(houseSystemFallback ? { houseSystemFallback } : {}),
     },
   };
 }
@@ -508,7 +509,7 @@ export function calculateLunarReturn(params: {
     zodiac,
   );
   const aspects = detectAspects(planets, 1, toAspectConfig(params));
-  const { houses, angles } = calcHouses(lunarReturnJd, params.returnLat, params.returnLon, params.houseSystem, zodiac);
+  const { houses, angles, houseSystemFallback } = calcHouses(lunarReturnJd, params.returnLat, params.returnLon, params.houseSystem, zodiac);
   computePartOfFortune(angles, planets);
 
   return {
@@ -522,6 +523,7 @@ export function calculateLunarReturn(params: {
       // As with the solar return: an unknown birth time moves the natal Moon
       // (~13°/day), and with it the solved return moment.
       birthTimeAssumed: params.birthTime === null,
+      ...(houseSystemFallback ? { houseSystemFallback } : {}),
     },
   };
 }
@@ -800,11 +802,23 @@ export function calculateAstromap(params: {
   birthTime: string;
   utcOffsetMinutes: number;
   enabledPlanets?: PlanetId[];
+  progressedDate?: string;
+  transitDate?: string;
 }): AstromapData {
-  const jd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
+  // Progressed lines: the same astrocartography at the progressed moment, which is
+  // how `calculateProgressed` gets its planets and angles — so a progressed line runs
+  // exactly where that chart's progressed planet would sit on the angle.
+  const birthJd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
+  // Transit lines: the day's planets on the birth rotation — see `computeAstromapLines`.
+  const jd = params.progressedDate
+    ? getProgressedJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes, params.progressedDate)
+    : params.transitDate
+      ? buildJulianDay(params.transitDate, '12:00', 0)
+      : birthJd;
+  const rotationJd = params.transitDate ? birthJd : jd;
   const requested = params.enabledPlanets ?? [...ASTROMAP_PLANETS];
   const planets = requested.filter((id) => (ASTROMAP_PLANETS as readonly PlanetId[]).includes(id));
-  const lines = computeAstromapLines(jd, planets);
+  const lines = computeAstromapLines(jd, planets, rotationJd);
   const parans = computeAstromapParans(lines);
   return {
     lines,
