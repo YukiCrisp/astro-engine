@@ -2,13 +2,14 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { initSweph } from '../../src/engine/sweph-adapter.js';
 import { calculateNatal, calculateProgressed } from '../../src/engine/index.js';
 import { NatalChartDataSchema } from '../../src/schemas/responses.js';
+import type { HouseSystem } from '../../src/engine/types.js';
 
 beforeAll(() => {
   initSweph('./ephe');
 });
 
 const birth = { birthDate: '1990-01-15', birthTime: '12:00', utcOffsetMinutes: 540, lon: 44.81 } as const;
-const natal = (lat: number, houseSystem: 'PLACIDUS' | 'KOCH' | 'PORPHYRY' | 'REGIOMONTANUS' | 'CAMPANUS' | 'EQUAL') =>
+const natal = (lat: number, houseSystem: HouseSystem) =>
   calculateNatal({ ...birth, lat, houseSystem });
 
 describe('meta.houseSystemFallback', () => {
@@ -26,9 +27,22 @@ describe('meta.houseSystemFallback', () => {
   it('is absent outside the polar circle and for systems that still compute there', () => {
     expect(natal(66.1, 'PLACIDUS').meta.houseSystemFallback).toBeUndefined();
     expect(natal(-60, 'KOCH').meta.houseSystemFallback).toBeUndefined();
-    for (const hs of ['REGIOMONTANUS', 'CAMPANUS', 'EQUAL'] as const) {
+    for (const hs of ['REGIOMONTANUS', 'CAMPANUS', 'EQUAL', 'ALCABITIUS', 'MORINUS', 'MERIDIAN', 'EQUAL_MC', 'VEHLOW'] as const) {
       expect(natal(70, hs).meta.houseSystemFallback).toBeUndefined();
     }
+  });
+
+  it('gives Topocentric the same Porphyry substitution inside the polar circle', () => {
+    // Swiss Ephemeris returns Topocentric cusps there without a flag, but at 80° they run
+    // backwards and the MC flips to the IC.
+    for (const lat of [70, 80, -70]) {
+      const chart = natal(lat, 'TOPOCENTRIC');
+      expect(chart.meta.houseSystemFallback).toBe('PORPHYRY');
+      expect(chart.houses!.map((h) => h.longitude)).toEqual(natal(lat, 'PORPHYRY').houses!.map((h) => h.longitude));
+    }
+    const outside = natal(60, 'TOPOCENTRIC');
+    expect(outside.meta.houseSystemFallback).toBeUndefined();
+    expect(outside.houses!.map((h) => h.longitude)).not.toEqual(natal(60, 'PORPHYRY').houses!.map((h) => h.longitude));
   });
 
   it('also covers the southern polar circle and the relocated progressed chart', () => {

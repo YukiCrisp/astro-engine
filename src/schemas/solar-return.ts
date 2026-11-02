@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PlanetIdEnum, AspectTypeEnum } from './responses.js';
+import { PlanetIdEnum, AspectTypeEnum, HouseSystemEnum } from './responses.js';
 import { EngineFilterSchema } from './natal.js';
 
 export const SolarReturnRequestSchema = z.object({
@@ -12,7 +12,7 @@ export const SolarReturnRequestSchema = z.object({
   returnLat: z.number().min(-90).max(90).describe('Latitude for the return chart location').meta({ example: 35.6762 }),
   returnLon: z.number().min(-180).max(180).describe('Longitude for the return chart location').meta({ example: 139.6503 }),
   returnUtcOffsetMinutes: z.number().int().min(-840).max(840).describe('UTC offset at the return location').meta({ example: 540 }),
-  houseSystem: z.enum(['PLACIDUS', 'WHOLE_SIGN', 'KOCH', 'REGIOMONTANUS', 'CAMPANUS', 'EQUAL', 'PORPHYRY']).default('PLACIDUS').describe('House system'),
+  houseSystem: HouseSystemEnum.default('PLACIDUS').describe('House system'),
   zodiacSystem: z.enum(['tropical', 'sidereal']).default('tropical').describe('Zodiac system (tropical or sidereal/Lahiri)'),
 }).merge(EngineFilterSchema);
 

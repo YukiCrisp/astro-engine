@@ -87,6 +87,12 @@ const HOUSE_SYSTEM_MAP: Record<HouseSystem, string> = {
   CAMPANUS: 'C',
   EQUAL: 'E',
   PORPHYRY: 'O',
+  TOPOCENTRIC: 'T',
+  ALCABITIUS: 'B',
+  MORINUS: 'M',
+  MERIDIAN: 'X',
+  EQUAL_MC: 'D',
+  VEHLOW: 'V',
 };
 
 /** Bodies that require supplementary ephemeris files (seas_*.se1). */
@@ -205,7 +211,13 @@ export function calcHouses(
   if (zodiacSystem === 'sidereal') {
     enableSiderealMode();
   }
-  const result = houses_ex2(jd, hsysFlags, lat, lon, HOUSE_SYSTEM_MAP[system]);
+  // Topocentric approximates Placidus and degenerates where Placidus does, but Swiss
+  // Ephemeris returns its broken cusps without a flag. Asking for Placidus first finds
+  // the polar circle by Swiss Ephemeris's own test and, there, already holds Porphyry.
+  let result = houses_ex2(jd, hsysFlags, lat, lon, HOUSE_SYSTEM_MAP[system === 'TOPOCENTRIC' ? 'PLACIDUS' : system]);
+  if (system === 'TOPOCENTRIC' && result.flag >= 0) {
+    result = houses_ex2(jd, hsysFlags, lat, lon, HOUSE_SYSTEM_MAP.TOPOCENTRIC);
+  }
   const houses: HouseCusp[] = Array.from({ length: 12 }, (_, i) => ({
     house: i + 1,
     longitude: result.data.houses[i],
@@ -223,7 +235,7 @@ export function calcHouses(
     eastPoint,
     partOfFortune: 0, // computed later in engine/index.ts after planets are known
   };
-  // Inside the polar circles Placidus and Koch have no solution; Swiss Ephemeris then
-  // computes Porphyry instead and reports it only through the return flag.
+  // Inside the polar circles Placidus and Koch (and, above, Topocentric) have no solution;
+  // Swiss Ephemeris then computes Porphyry instead and reports it only through the return flag.
   return result.flag < 0 ? { houses, angles, houseSystemFallback: 'PORPHYRY' } : { houses, angles };
 }

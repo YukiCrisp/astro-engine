@@ -81,7 +81,13 @@
                       "REGIOMONTANUS",
                       "CAMPANUS",
                       "EQUAL",
-                      "PORPHYRY"
+                      "PORPHYRY",
+                      "TOPOCENTRIC",
+                      "ALCABITIUS",
+                      "MORINUS",
+                      "MERIDIAN",
+                      "EQUAL_MC",
+                      "VEHLOW"
                     ]
                   },
                   "zodiacSystem": {
@@ -540,7 +546,13 @@
                             "REGIOMONTANUS",
                             "CAMPANUS",
                             "EQUAL",
-                            "PORPHYRY"
+                            "PORPHYRY",
+                            "TOPOCENTRIC",
+                            "ALCABITIUS",
+                            "MORINUS",
+                            "MERIDIAN",
+                            "EQUAL_MC",
+                            "VEHLOW"
                           ]
                         },
                         "zodiacSystem": {
@@ -556,6 +568,13 @@
                         "birthTimeAssumed": {
                           "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
                           "type": "boolean"
+                        },
+                        "houseSystemFallback": {
+                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
+                          "type": "string",
+                          "enum": [
+                            "PORPHYRY"
+                          ]
                         }
                       },
                       "required": [
@@ -642,7 +661,13 @@
                       "REGIOMONTANUS",
                       "CAMPANUS",
                       "EQUAL",
-                      "PORPHYRY"
+                      "PORPHYRY",
+                      "TOPOCENTRIC",
+                      "ALCABITIUS",
+                      "MORINUS",
+                      "MERIDIAN",
+                      "EQUAL_MC",
+                      "VEHLOW"
                     ]
                   },
                   "zodiacSystem": {
@@ -1101,7 +1126,13 @@
                             "REGIOMONTANUS",
                             "CAMPANUS",
                             "EQUAL",
-                            "PORPHYRY"
+                            "PORPHYRY",
+                            "TOPOCENTRIC",
+                            "ALCABITIUS",
+                            "MORINUS",
+                            "MERIDIAN",
+                            "EQUAL_MC",
+                            "VEHLOW"
                           ]
                         },
                         "zodiacSystem": {
@@ -1117,6 +1148,13 @@
                         "birthTimeAssumed": {
                           "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
                           "type": "boolean"
+                        },
+                        "houseSystemFallback": {
+                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
+                          "type": "string",
+                          "enum": [
+                            "PORPHYRY"
+                          ]
                         }
                       },
                       "required": [
@@ -1572,7 +1610,13 @@
                       "REGIOMONTANUS",
                       "CAMPANUS",
                       "EQUAL",
-                      "PORPHYRY"
+                      "PORPHYRY",
+                      "TOPOCENTRIC",
+                      "ALCABITIUS",
+                      "MORINUS",
+                      "MERIDIAN",
+                      "EQUAL_MC",
+                      "VEHLOW"
                     ]
                   },
                   "zodiacSystem": {
@@ -2050,7 +2094,13 @@
                             "REGIOMONTANUS",
                             "CAMPANUS",
                             "EQUAL",
-                            "PORPHYRY"
+                            "PORPHYRY",
+                            "TOPOCENTRIC",
+                            "ALCABITIUS",
+                            "MORINUS",
+                            "MERIDIAN",
+                            "EQUAL_MC",
+                            "VEHLOW"
                           ]
                         },
                         "zodiacSystem": {
@@ -2066,6 +2116,13 @@
                         "birthTimeAssumed": {
                           "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
                           "type": "boolean"
+                        },
+                        "houseSystemFallback": {
+                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
+                          "type": "string",
+                          "enum": [
+                            "PORPHYRY"
+                          ]
                         }
                       },
                       "required": [
@@ -2264,7 +2321,13 @@
                       "REGIOMONTANUS",
                       "CAMPANUS",
                       "EQUAL",
-                      "PORPHYRY"
+                      "PORPHYRY",
+                      "TOPOCENTRIC",
+                      "ALCABITIUS",
+                      "MORINUS",
+                      "MERIDIAN",
+                      "EQUAL_MC",
+                      "VEHLOW"
                     ]
                   },
                   "zodiacSystem": {
@@ -2723,7 +2786,13 @@
                             "REGIOMONTANUS",
                             "CAMPANUS",
                             "EQUAL",
-                            "PORPHYRY"
+                            "PORPHYRY",
+                            "TOPOCENTRIC",
+                            "ALCABITIUS",
+                            "MORINUS",
+                            "MERIDIAN",
+                            "EQUAL_MC",
+                            "VEHLOW"
                           ]
                         },
                         "zodiacSystem": {
@@ -2739,6 +2808,13 @@
                         "birthTimeAssumed": {
                           "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
                           "type": "boolean"
+                        },
+                        "houseSystemFallback": {
+                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
+                          "type": "string",
+                          "enum": [
+                            "PORPHYRY"
+                          ]
                         }
                       },
                       "required": [
@@ -2937,7 +3013,13 @@
                       "REGIOMONTANUS",
                       "CAMPANUS",
                       "EQUAL",
-                      "PORPHYRY"
+                      "PORPHYRY",
+                      "TOPOCENTRIC",
+                      "ALCABITIUS",
+                      "MORINUS",
+                      "MERIDIAN",
+                      "EQUAL_MC",
+                      "VEHLOW"
                     ]
                   },
                   "zodiacSystem": {
@@ -3476,7 +3558,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -3664,7 +3752,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -4231,7 +4325,13 @@
                                 "REGIOMONTANUS",
                                 "CAMPANUS",
                                 "EQUAL",
-                                "PORPHYRY"
+                                "PORPHYRY",
+                                "TOPOCENTRIC",
+                                "ALCABITIUS",
+                                "MORINUS",
+                                "MERIDIAN",
+                                "EQUAL_MC",
+                                "VEHLOW"
                               ]
                             },
                             "zodiacSystem": {
@@ -4247,6 +4347,13 @@
                             "birthTimeAssumed": {
                               "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
                               "type": "boolean"
+                            },
+                            "houseSystemFallback": {
+                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
+                              "type": "string",
+                              "enum": [
+                                "PORPHYRY"
+                              ]
                             }
                           },
                           "required": [
@@ -4605,7 +4712,13 @@
                                 "REGIOMONTANUS",
                                 "CAMPANUS",
                                 "EQUAL",
-                                "PORPHYRY"
+                                "PORPHYRY",
+                                "TOPOCENTRIC",
+                                "ALCABITIUS",
+                                "MORINUS",
+                                "MERIDIAN",
+                                "EQUAL_MC",
+                                "VEHLOW"
                               ]
                             },
                             "zodiacSystem": {
@@ -4621,6 +4734,13 @@
                             "birthTimeAssumed": {
                               "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
                               "type": "boolean"
+                            },
+                            "houseSystemFallback": {
+                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
+                              "type": "string",
+                              "enum": [
+                                "PORPHYRY"
+                              ]
                             }
                           },
                           "required": [
@@ -4979,7 +5099,13 @@
                                 "REGIOMONTANUS",
                                 "CAMPANUS",
                                 "EQUAL",
-                                "PORPHYRY"
+                                "PORPHYRY",
+                                "TOPOCENTRIC",
+                                "ALCABITIUS",
+                                "MORINUS",
+                                "MERIDIAN",
+                                "EQUAL_MC",
+                                "VEHLOW"
                               ]
                             },
                             "zodiacSystem": {
@@ -4995,6 +5121,13 @@
                             "birthTimeAssumed": {
                               "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
                               "type": "boolean"
+                            },
+                            "houseSystemFallback": {
+                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
+                              "type": "string",
+                              "enum": [
+                                "PORPHYRY"
+                              ]
                             }
                           },
                           "required": [
@@ -5391,7 +5524,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -5553,7 +5692,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -6114,7 +6259,13 @@
                                 "REGIOMONTANUS",
                                 "CAMPANUS",
                                 "EQUAL",
-                                "PORPHYRY"
+                                "PORPHYRY",
+                                "TOPOCENTRIC",
+                                "ALCABITIUS",
+                                "MORINUS",
+                                "MERIDIAN",
+                                "EQUAL_MC",
+                                "VEHLOW"
                               ]
                             },
                             "zodiacSystem": {
@@ -6130,6 +6281,13 @@
                             "birthTimeAssumed": {
                               "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
                               "type": "boolean"
+                            },
+                            "houseSystemFallback": {
+                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
+                              "type": "string",
+                              "enum": [
+                                "PORPHYRY"
+                              ]
                             }
                           },
                           "required": [
@@ -6488,7 +6646,13 @@
                                 "REGIOMONTANUS",
                                 "CAMPANUS",
                                 "EQUAL",
-                                "PORPHYRY"
+                                "PORPHYRY",
+                                "TOPOCENTRIC",
+                                "ALCABITIUS",
+                                "MORINUS",
+                                "MERIDIAN",
+                                "EQUAL_MC",
+                                "VEHLOW"
                               ]
                             },
                             "zodiacSystem": {
@@ -6504,6 +6668,13 @@
                             "birthTimeAssumed": {
                               "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
                               "type": "boolean"
+                            },
+                            "houseSystemFallback": {
+                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
+                              "type": "string",
+                              "enum": [
+                                "PORPHYRY"
+                              ]
                             }
                           },
                           "required": [
@@ -6708,7 +6879,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -6870,7 +7047,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -7428,7 +7611,13 @@
                             "REGIOMONTANUS",
                             "CAMPANUS",
                             "EQUAL",
-                            "PORPHYRY"
+                            "PORPHYRY",
+                            "TOPOCENTRIC",
+                            "ALCABITIUS",
+                            "MORINUS",
+                            "MERIDIAN",
+                            "EQUAL_MC",
+                            "VEHLOW"
                           ]
                         },
                         "zodiacSystem": {
@@ -7444,6 +7633,13 @@
                         "birthTimeAssumed": {
                           "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
                           "type": "boolean"
+                        },
+                        "houseSystemFallback": {
+                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
+                          "type": "string",
+                          "enum": [
+                            "PORPHYRY"
+                          ]
                         }
                       },
                       "required": [
@@ -7645,7 +7841,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -7807,7 +8009,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -7969,7 +8177,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -8531,7 +8745,13 @@
                                 "REGIOMONTANUS",
                                 "CAMPANUS",
                                 "EQUAL",
-                                "PORPHYRY"
+                                "PORPHYRY",
+                                "TOPOCENTRIC",
+                                "ALCABITIUS",
+                                "MORINUS",
+                                "MERIDIAN",
+                                "EQUAL_MC",
+                                "VEHLOW"
                               ]
                             },
                             "zodiacSystem": {
@@ -8547,6 +8767,13 @@
                             "birthTimeAssumed": {
                               "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
                               "type": "boolean"
+                            },
+                            "houseSystemFallback": {
+                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
+                              "type": "string",
+                              "enum": [
+                                "PORPHYRY"
+                              ]
                             }
                           },
                           "required": [
@@ -8905,7 +9132,13 @@
                                 "REGIOMONTANUS",
                                 "CAMPANUS",
                                 "EQUAL",
-                                "PORPHYRY"
+                                "PORPHYRY",
+                                "TOPOCENTRIC",
+                                "ALCABITIUS",
+                                "MORINUS",
+                                "MERIDIAN",
+                                "EQUAL_MC",
+                                "VEHLOW"
                               ]
                             },
                             "zodiacSystem": {
@@ -8921,6 +9154,13 @@
                             "birthTimeAssumed": {
                               "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
                               "type": "boolean"
+                            },
+                            "houseSystemFallback": {
+                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
+                              "type": "string",
+                              "enum": [
+                                "PORPHYRY"
+                              ]
                             }
                           },
                           "required": [
@@ -9669,7 +9909,13 @@
                       "REGIOMONTANUS",
                       "CAMPANUS",
                       "EQUAL",
-                      "PORPHYRY"
+                      "PORPHYRY",
+                      "TOPOCENTRIC",
+                      "ALCABITIUS",
+                      "MORINUS",
+                      "MERIDIAN",
+                      "EQUAL_MC",
+                      "VEHLOW"
                     ]
                   },
                   "zodiacSystem": {
@@ -10132,7 +10378,13 @@
                             "REGIOMONTANUS",
                             "CAMPANUS",
                             "EQUAL",
-                            "PORPHYRY"
+                            "PORPHYRY",
+                            "TOPOCENTRIC",
+                            "ALCABITIUS",
+                            "MORINUS",
+                            "MERIDIAN",
+                            "EQUAL_MC",
+                            "VEHLOW"
                           ]
                         },
                         "zodiacSystem": {
@@ -10148,6 +10400,13 @@
                         "birthTimeAssumed": {
                           "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
                           "type": "boolean"
+                        },
+                        "houseSystemFallback": {
+                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
+                          "type": "string",
+                          "enum": [
+                            "PORPHYRY"
+                          ]
                         }
                       },
                       "required": [
@@ -10346,7 +10605,13 @@
                       "REGIOMONTANUS",
                       "CAMPANUS",
                       "EQUAL",
-                      "PORPHYRY"
+                      "PORPHYRY",
+                      "TOPOCENTRIC",
+                      "ALCABITIUS",
+                      "MORINUS",
+                      "MERIDIAN",
+                      "EQUAL_MC",
+                      "VEHLOW"
                     ]
                   },
                   "zodiacSystem": {
@@ -10812,7 +11077,13 @@
                             "REGIOMONTANUS",
                             "CAMPANUS",
                             "EQUAL",
-                            "PORPHYRY"
+                            "PORPHYRY",
+                            "TOPOCENTRIC",
+                            "ALCABITIUS",
+                            "MORINUS",
+                            "MERIDIAN",
+                            "EQUAL_MC",
+                            "VEHLOW"
                           ]
                         },
                         "zodiacSystem": {
@@ -10828,6 +11099,13 @@
                         "birthTimeAssumed": {
                           "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
                           "type": "boolean"
+                        },
+                        "houseSystemFallback": {
+                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
+                          "type": "string",
+                          "enum": [
+                            "PORPHYRY"
+                          ]
                         }
                       },
                       "required": [
@@ -11101,7 +11379,13 @@
                       "REGIOMONTANUS",
                       "CAMPANUS",
                       "EQUAL",
-                      "PORPHYRY"
+                      "PORPHYRY",
+                      "TOPOCENTRIC",
+                      "ALCABITIUS",
+                      "MORINUS",
+                      "MERIDIAN",
+                      "EQUAL_MC",
+                      "VEHLOW"
                     ]
                   },
                   "zodiacSystem": {
@@ -11564,7 +11848,13 @@
                             "REGIOMONTANUS",
                             "CAMPANUS",
                             "EQUAL",
-                            "PORPHYRY"
+                            "PORPHYRY",
+                            "TOPOCENTRIC",
+                            "ALCABITIUS",
+                            "MORINUS",
+                            "MERIDIAN",
+                            "EQUAL_MC",
+                            "VEHLOW"
                           ]
                         },
                         "zodiacSystem": {
@@ -11580,6 +11870,13 @@
                         "birthTimeAssumed": {
                           "description": "True when no clock time was supplied for this chart and local noon was assumed. `angles`, `houses`, every house placement derived from them and `arabicParts` are then products of that assumption rather than of the birth data — the ASC advances a full sign roughly every two hours, so an assumed-noon ASC lands on the true sign about one time in twelve. Testing `angles !== null` is NOT sufficient: the engine fills those fields in from the assumption, and this flag is the only thing that separates measured from assumed.",
                           "type": "boolean"
+                        },
+                        "houseSystemFallback": {
+                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
+                          "type": "string",
+                          "enum": [
+                            "PORPHYRY"
+                          ]
                         }
                       },
                       "required": [
@@ -11884,6 +12181,18 @@
                     "type": "integer",
                     "minimum": -840,
                     "maximum": 840
+                  },
+                  "progressedDate": {
+                    "description": "When set, draw secondary-progressed lines for this date instead of the natal ones: the planets and the Earth's rotation are taken at the progressed moment, the same moment `/v1/charts/progressed` uses (one day after birth per year of life).",
+                    "example": "2026-11-01",
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "transitDate": {
+                    "description": "When set, draw transit lines: the planets at 12:00 UT on this date, placed with the Earth's rotation at the birth moment. A place on a transit line is where that planet of the day sits on the angle of the birth chart relocated there. Cannot be combined with progressedDate.",
+                    "example": "2026-11-01",
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
                   },
                   "enabledPlanets": {
                     "description": "Only compute these planets",
