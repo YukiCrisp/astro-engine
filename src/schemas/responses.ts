@@ -188,6 +188,16 @@ export const DavisonTransitChartDataSchema = z.object({
   }),
 });
 
+export const SolarReturnTransitChartDataSchema = z.object({
+  solarReturn: NatalChartDataSchema,
+  transit: NatalChartDataSchema,
+  crossAspects: z.array(AspectSchema),
+  meta: z.object({
+    schemaVersion: z.number(),
+    calculatedAt: z.string(),
+  }),
+});
+
 const EphemerisDaySchema = z.object({
   date: z.string(),
   planets: z.array(PlanetPositionSchema),
