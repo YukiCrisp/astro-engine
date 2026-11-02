@@ -920,3 +920,36 @@ export function calculateDavisonTransit(params: {
     meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString() },
   };
 }
+
+/**
+ * Transits over a solar return: the solar return chart (static) with the transiting
+ * sky of the requested moment, and the aspects from return bodies to transiting ones.
+ * The return moment carries seconds, which a natal request (HH:MM) cannot, so the
+ * return is computed here rather than passed in as a chart moment.
+ */
+export function calculateSolarReturnTransit(params: {
+  solarReturn: Parameters<typeof calculateSolarReturn>[0];
+  transit: Parameters<typeof calculateTransit>[0];
+} & EngineFilterParams): {
+  solarReturn: NatalChartData;
+  transit: NatalChartData;
+  crossAspects: import('./types.js').Aspect[];
+  meta: { schemaVersion: number; calculatedAt: string };
+} {
+  const filterParams: EngineFilterParams = {
+    enabledPlanets: params.enabledPlanets,
+    enabledPoints: params.enabledPoints,
+    enabledAspects: params.enabledAspects,
+    aspectOrbs: params.aspectOrbs,
+    sunOrbBonus: params.sunOrbBonus,
+    moonOrbBonus: params.moonOrbBonus,
+  };
+  const solarReturn = calculateSolarReturn({ ...params.solarReturn, ...filterParams });
+  const transit = calculateTransit({ ...params.transit, ...filterParams });
+  // The return is static, transit moves → applying is meaningful for the cross-aspects.
+  const crossAspects = detectCrossAspects(solarReturn.planets, transit.planets, toAspectConfig(filterParams), true);
+  return {
+    solarReturn, transit, crossAspects,
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString() },
+  };
+}
