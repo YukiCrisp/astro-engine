@@ -15,6 +15,7 @@ import { synastryRoute } from './routes/synastry.js';
 import { compositeRoute } from './routes/composite.js';
 import { compositeTransitRoute } from './routes/composite-transit.js';
 import { davisonRoute } from './routes/davison.js';
+import { davisonTransitRoute } from './routes/davison-transit.js';
 import { ephemerisRoute } from './routes/ephemeris.js';
 import { vocMoonRoute } from './routes/voc-moon.js';
 import { natalAnalysisRoute } from './routes/natal-analysis.js';
@@ -90,6 +91,7 @@ export async function buildApp() {
   await app.register(compositeRoute);
   await app.register(compositeTransitRoute);
   await app.register(davisonRoute);
+  await app.register(davisonTransitRoute);
   await app.register(ephemerisRoute);
   await app.register(vocMoonRoute);
   await app.register(solarReturnRoute);

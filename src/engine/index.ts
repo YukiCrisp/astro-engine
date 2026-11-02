@@ -884,3 +884,36 @@ export function calculateDavison(params: {
   }
   return result;
 }
+
+/**
+ * Transits over the Davison chart: the Davison chart (static) with the transiting
+ * sky of the requested moment, and the aspects from Davison bodies to transiting ones.
+ * Same shape as the composite transit, with the Davison chart in place of the composite.
+ */
+export function calculateDavisonTransit(params: {
+  personA: Parameters<typeof calculateNatal>[0];
+  personB: Parameters<typeof calculateNatal>[0];
+  transit: Parameters<typeof calculateTransit>[0];
+} & EngineFilterParams): {
+  davison: NatalChartData & { midpoint: DavisonMidpoint };
+  transit: NatalChartData;
+  crossAspects: import('./types.js').Aspect[];
+  meta: { schemaVersion: number; calculatedAt: string };
+} {
+  const filterParams: EngineFilterParams = {
+    enabledPlanets: params.enabledPlanets,
+    enabledPoints: params.enabledPoints,
+    enabledAspects: params.enabledAspects,
+    aspectOrbs: params.aspectOrbs,
+    sunOrbBonus: params.sunOrbBonus,
+    moonOrbBonus: params.moonOrbBonus,
+  };
+  const davison = calculateDavison({ personA: params.personA, personB: params.personB, ...filterParams });
+  const transit = calculateTransit({ ...params.transit, ...filterParams });
+  // Davison is static, transit moves → applying is meaningful for the cross-aspects.
+  const crossAspects = detectCrossAspects(davison.planets, transit.planets, toAspectConfig(filterParams), true);
+  return {
+    davison, transit, crossAspects,
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString() },
+  };
+}
