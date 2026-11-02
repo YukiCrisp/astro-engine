@@ -118,6 +118,15 @@ export const NatalChartWithPatternsSchema = NatalChartDataSchema.extend({
   aspectPatterns: z.array(AspectPatternSchema),
 });
 
+// Davison: a real chart at the midpoint moment and place; `midpoint` says where and when.
+export const DavisonChartSchema = NatalChartWithPatternsSchema.extend({
+  midpoint: z.object({
+    julianDay: z.number().describe('Julian Day (UT) halfway between the two births.'),
+    lat: z.number().describe('Average of the two birth latitudes.'),
+    lon: z.number().describe('Average of the two birth longitudes, taken the shorter way round the globe (-180 to 180).'),
+  }),
+});
+
 // Solar arc: the natal-shaped fields keep their meaning (directed planets over
 // the natal houses and angles); `arc` and `directedAngles` are additive.
 export const SolarArcChartSchema = NatalChartWithPatternsSchema.extend({
