@@ -6,7 +6,7 @@ import { calculateSolarArcPositions, directSolarArcAngles } from './calculations
 import { findSolarReturnJD } from './calculations/solar-return.js';
 import { findLunarReturnJD, listLunarReturnsInYear } from './calculations/lunar-return.js';
 import { midpointLongitude } from './calculations/composite.js';
-import { compositeHouseCusps } from './calculations/composite-houses.js';
+import { compositeHouseCusps, compositeMcIsTenthCusp } from './calculations/composite-houses.js';
 import { calculateVocPeriods } from './calculations/voc-moon.js';
 import { computeTransitEvents, shiftedAnglesFor, signedAspectOrb } from './calculations/transit-events.js';
 import { analyzeChart } from './calculations/chart-analysis.js';
@@ -312,15 +312,14 @@ export function calculateComposite(params: {
     const compositeAsc = midpointLongitude(chartA.angles.asc, chartB.angles.asc);
     const compositeMc = midpointLongitude(chartA.angles.mc, chartB.angles.mc);
 
-    // Quadrant cusps average each natal house's offset from its ASC; Whole
-    // Sign starts at the ASC sign boundary, while Equal starts at the ASC.
+    // Quadrant cusps average each natal house's offset from its ASC; the
+    // equal systems count from the composite ASC or MC (see compositeHouseCusps).
     const houses = compositeHouseCusps(
-      houseSystem, compositeAsc,
-      chartA.houses, chartA.angles.asc,
-      chartB.houses, chartB.angles.asc,
+      houseSystem, { asc: compositeAsc, mc: compositeMc },
+      chartA.houses, chartA.angles,
+      chartB.houses, chartB.angles,
     );
-    const mc = houseSystem === 'EQUAL' || houseSystem === 'WHOLE_SIGN'
-      ? compositeMc : houses[9].longitude;
+    const mc = compositeMcIsTenthCusp(houseSystem) ? houses[9].longitude : compositeMc;
 
     const midJd = (chartA.meta.julianDay + chartB.meta.julianDay) / 2;
 

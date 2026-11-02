@@ -13,7 +13,9 @@ export type SignName =
   | 'ARI' | 'TAU' | 'GEM' | 'CAN' | 'LEO' | 'VIR'
   | 'LIB' | 'SCO' | 'SAG' | 'CAP' | 'AQU' | 'PIS';
 
-export type HouseSystem = 'PLACIDUS' | 'WHOLE_SIGN' | 'KOCH' | 'REGIOMONTANUS' | 'CAMPANUS' | 'EQUAL' | 'PORPHYRY';
+export type HouseSystem =
+  | 'PLACIDUS' | 'WHOLE_SIGN' | 'KOCH' | 'REGIOMONTANUS' | 'CAMPANUS' | 'EQUAL' | 'PORPHYRY'
+  | 'TOPOCENTRIC' | 'ALCABITIUS' | 'MORINUS' | 'MERIDIAN' | 'EQUAL_MC' | 'VEHLOW';
 
 export type ZodiacSystem = 'tropical' | 'sidereal';
 

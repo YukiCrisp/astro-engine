@@ -81,7 +81,13 @@
                       "REGIOMONTANUS",
                       "CAMPANUS",
                       "EQUAL",
-                      "PORPHYRY"
+                      "PORPHYRY",
+                      "TOPOCENTRIC",
+                      "ALCABITIUS",
+                      "MORINUS",
+                      "MERIDIAN",
+                      "EQUAL_MC",
+                      "VEHLOW"
                     ]
                   },
                   "zodiacSystem": {
@@ -548,7 +554,13 @@
                             "REGIOMONTANUS",
                             "CAMPANUS",
                             "EQUAL",
-                            "PORPHYRY"
+                            "PORPHYRY",
+                            "TOPOCENTRIC",
+                            "ALCABITIUS",
+                            "MORINUS",
+                            "MERIDIAN",
+                            "EQUAL_MC",
+                            "VEHLOW"
                           ]
                         },
                         "zodiacSystem": {
@@ -566,7 +578,7 @@
                           "type": "boolean"
                         },
                         "houseSystemFallback": {
-                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry.",
+                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
                           "type": "string",
                           "enum": [
                             "PORPHYRY"
@@ -657,7 +669,13 @@
                       "REGIOMONTANUS",
                       "CAMPANUS",
                       "EQUAL",
-                      "PORPHYRY"
+                      "PORPHYRY",
+                      "TOPOCENTRIC",
+                      "ALCABITIUS",
+                      "MORINUS",
+                      "MERIDIAN",
+                      "EQUAL_MC",
+                      "VEHLOW"
                     ]
                   },
                   "zodiacSystem": {
@@ -1124,7 +1142,13 @@
                             "REGIOMONTANUS",
                             "CAMPANUS",
                             "EQUAL",
-                            "PORPHYRY"
+                            "PORPHYRY",
+                            "TOPOCENTRIC",
+                            "ALCABITIUS",
+                            "MORINUS",
+                            "MERIDIAN",
+                            "EQUAL_MC",
+                            "VEHLOW"
                           ]
                         },
                         "zodiacSystem": {
@@ -1142,7 +1166,7 @@
                           "type": "boolean"
                         },
                         "houseSystemFallback": {
-                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry.",
+                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
                           "type": "string",
                           "enum": [
                             "PORPHYRY"
@@ -1602,7 +1626,13 @@
                       "REGIOMONTANUS",
                       "CAMPANUS",
                       "EQUAL",
-                      "PORPHYRY"
+                      "PORPHYRY",
+                      "TOPOCENTRIC",
+                      "ALCABITIUS",
+                      "MORINUS",
+                      "MERIDIAN",
+                      "EQUAL_MC",
+                      "VEHLOW"
                     ]
                   },
                   "zodiacSystem": {
@@ -2088,7 +2118,13 @@
                             "REGIOMONTANUS",
                             "CAMPANUS",
                             "EQUAL",
-                            "PORPHYRY"
+                            "PORPHYRY",
+                            "TOPOCENTRIC",
+                            "ALCABITIUS",
+                            "MORINUS",
+                            "MERIDIAN",
+                            "EQUAL_MC",
+                            "VEHLOW"
                           ]
                         },
                         "zodiacSystem": {
@@ -2106,7 +2142,7 @@
                           "type": "boolean"
                         },
                         "houseSystemFallback": {
-                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry.",
+                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
                           "type": "string",
                           "enum": [
                             "PORPHYRY"
@@ -2309,7 +2345,13 @@
                       "REGIOMONTANUS",
                       "CAMPANUS",
                       "EQUAL",
-                      "PORPHYRY"
+                      "PORPHYRY",
+                      "TOPOCENTRIC",
+                      "ALCABITIUS",
+                      "MORINUS",
+                      "MERIDIAN",
+                      "EQUAL_MC",
+                      "VEHLOW"
                     ]
                   },
                   "zodiacSystem": {
@@ -2776,7 +2818,13 @@
                             "REGIOMONTANUS",
                             "CAMPANUS",
                             "EQUAL",
-                            "PORPHYRY"
+                            "PORPHYRY",
+                            "TOPOCENTRIC",
+                            "ALCABITIUS",
+                            "MORINUS",
+                            "MERIDIAN",
+                            "EQUAL_MC",
+                            "VEHLOW"
                           ]
                         },
                         "zodiacSystem": {
@@ -2794,7 +2842,7 @@
                           "type": "boolean"
                         },
                         "houseSystemFallback": {
-                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry.",
+                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
                           "type": "string",
                           "enum": [
                             "PORPHYRY"
@@ -2997,7 +3045,13 @@
                       "REGIOMONTANUS",
                       "CAMPANUS",
                       "EQUAL",
-                      "PORPHYRY"
+                      "PORPHYRY",
+                      "TOPOCENTRIC",
+                      "ALCABITIUS",
+                      "MORINUS",
+                      "MERIDIAN",
+                      "EQUAL_MC",
+                      "VEHLOW"
                     ]
                   },
                   "zodiacSystem": {
@@ -3536,7 +3590,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -3728,7 +3788,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -4307,7 +4373,13 @@
                                 "REGIOMONTANUS",
                                 "CAMPANUS",
                                 "EQUAL",
-                                "PORPHYRY"
+                                "PORPHYRY",
+                                "TOPOCENTRIC",
+                                "ALCABITIUS",
+                                "MORINUS",
+                                "MERIDIAN",
+                                "EQUAL_MC",
+                                "VEHLOW"
                               ]
                             },
                             "zodiacSystem": {
@@ -4325,7 +4397,7 @@
                               "type": "boolean"
                             },
                             "houseSystemFallback": {
-                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry.",
+                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
                               "type": "string",
                               "enum": [
                                 "PORPHYRY"
@@ -4692,7 +4764,13 @@
                                 "REGIOMONTANUS",
                                 "CAMPANUS",
                                 "EQUAL",
-                                "PORPHYRY"
+                                "PORPHYRY",
+                                "TOPOCENTRIC",
+                                "ALCABITIUS",
+                                "MORINUS",
+                                "MERIDIAN",
+                                "EQUAL_MC",
+                                "VEHLOW"
                               ]
                             },
                             "zodiacSystem": {
@@ -4710,7 +4788,7 @@
                               "type": "boolean"
                             },
                             "houseSystemFallback": {
-                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry.",
+                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
                               "type": "string",
                               "enum": [
                                 "PORPHYRY"
@@ -5077,7 +5155,13 @@
                                 "REGIOMONTANUS",
                                 "CAMPANUS",
                                 "EQUAL",
-                                "PORPHYRY"
+                                "PORPHYRY",
+                                "TOPOCENTRIC",
+                                "ALCABITIUS",
+                                "MORINUS",
+                                "MERIDIAN",
+                                "EQUAL_MC",
+                                "VEHLOW"
                               ]
                             },
                             "zodiacSystem": {
@@ -5095,7 +5179,7 @@
                               "type": "boolean"
                             },
                             "houseSystemFallback": {
-                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry.",
+                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
                               "type": "string",
                               "enum": [
                                 "PORPHYRY"
@@ -5496,7 +5580,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -5662,7 +5752,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -6235,7 +6331,13 @@
                                 "REGIOMONTANUS",
                                 "CAMPANUS",
                                 "EQUAL",
-                                "PORPHYRY"
+                                "PORPHYRY",
+                                "TOPOCENTRIC",
+                                "ALCABITIUS",
+                                "MORINUS",
+                                "MERIDIAN",
+                                "EQUAL_MC",
+                                "VEHLOW"
                               ]
                             },
                             "zodiacSystem": {
@@ -6253,7 +6355,7 @@
                               "type": "boolean"
                             },
                             "houseSystemFallback": {
-                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry.",
+                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
                               "type": "string",
                               "enum": [
                                 "PORPHYRY"
@@ -6620,7 +6722,13 @@
                                 "REGIOMONTANUS",
                                 "CAMPANUS",
                                 "EQUAL",
-                                "PORPHYRY"
+                                "PORPHYRY",
+                                "TOPOCENTRIC",
+                                "ALCABITIUS",
+                                "MORINUS",
+                                "MERIDIAN",
+                                "EQUAL_MC",
+                                "VEHLOW"
                               ]
                             },
                             "zodiacSystem": {
@@ -6638,7 +6746,7 @@
                               "type": "boolean"
                             },
                             "houseSystemFallback": {
-                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry.",
+                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
                               "type": "string",
                               "enum": [
                                 "PORPHYRY"
@@ -6847,7 +6955,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -7013,7 +7127,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -7583,7 +7703,13 @@
                             "REGIOMONTANUS",
                             "CAMPANUS",
                             "EQUAL",
-                            "PORPHYRY"
+                            "PORPHYRY",
+                            "TOPOCENTRIC",
+                            "ALCABITIUS",
+                            "MORINUS",
+                            "MERIDIAN",
+                            "EQUAL_MC",
+                            "VEHLOW"
                           ]
                         },
                         "zodiacSystem": {
@@ -7601,7 +7727,7 @@
                           "type": "boolean"
                         },
                         "houseSystemFallback": {
-                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry.",
+                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
                           "type": "string",
                           "enum": [
                             "PORPHYRY"
@@ -7807,7 +7933,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -7973,7 +8105,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -8139,7 +8277,13 @@
                           "REGIOMONTANUS",
                           "CAMPANUS",
                           "EQUAL",
-                          "PORPHYRY"
+                          "PORPHYRY",
+                          "TOPOCENTRIC",
+                          "ALCABITIUS",
+                          "MORINUS",
+                          "MERIDIAN",
+                          "EQUAL_MC",
+                          "VEHLOW"
                         ]
                       },
                       "zodiacSystem": {
@@ -8713,7 +8857,13 @@
                                 "REGIOMONTANUS",
                                 "CAMPANUS",
                                 "EQUAL",
-                                "PORPHYRY"
+                                "PORPHYRY",
+                                "TOPOCENTRIC",
+                                "ALCABITIUS",
+                                "MORINUS",
+                                "MERIDIAN",
+                                "EQUAL_MC",
+                                "VEHLOW"
                               ]
                             },
                             "zodiacSystem": {
@@ -8731,7 +8881,7 @@
                               "type": "boolean"
                             },
                             "houseSystemFallback": {
-                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry.",
+                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
                               "type": "string",
                               "enum": [
                                 "PORPHYRY"
@@ -9098,7 +9248,13 @@
                                 "REGIOMONTANUS",
                                 "CAMPANUS",
                                 "EQUAL",
-                                "PORPHYRY"
+                                "PORPHYRY",
+                                "TOPOCENTRIC",
+                                "ALCABITIUS",
+                                "MORINUS",
+                                "MERIDIAN",
+                                "EQUAL_MC",
+                                "VEHLOW"
                               ]
                             },
                             "zodiacSystem": {
@@ -9116,7 +9272,7 @@
                               "type": "boolean"
                             },
                             "houseSystemFallback": {
-                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry.",
+                              "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
                               "type": "string",
                               "enum": [
                                 "PORPHYRY"
@@ -9869,7 +10025,13 @@
                       "REGIOMONTANUS",
                       "CAMPANUS",
                       "EQUAL",
-                      "PORPHYRY"
+                      "PORPHYRY",
+                      "TOPOCENTRIC",
+                      "ALCABITIUS",
+                      "MORINUS",
+                      "MERIDIAN",
+                      "EQUAL_MC",
+                      "VEHLOW"
                     ]
                   },
                   "zodiacSystem": {
@@ -10340,7 +10502,13 @@
                             "REGIOMONTANUS",
                             "CAMPANUS",
                             "EQUAL",
-                            "PORPHYRY"
+                            "PORPHYRY",
+                            "TOPOCENTRIC",
+                            "ALCABITIUS",
+                            "MORINUS",
+                            "MERIDIAN",
+                            "EQUAL_MC",
+                            "VEHLOW"
                           ]
                         },
                         "zodiacSystem": {
@@ -10358,7 +10526,7 @@
                           "type": "boolean"
                         },
                         "houseSystemFallback": {
-                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry.",
+                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
                           "type": "string",
                           "enum": [
                             "PORPHYRY"
@@ -10561,7 +10729,13 @@
                       "REGIOMONTANUS",
                       "CAMPANUS",
                       "EQUAL",
-                      "PORPHYRY"
+                      "PORPHYRY",
+                      "TOPOCENTRIC",
+                      "ALCABITIUS",
+                      "MORINUS",
+                      "MERIDIAN",
+                      "EQUAL_MC",
+                      "VEHLOW"
                     ]
                   },
                   "zodiacSystem": {
@@ -11035,7 +11209,13 @@
                             "REGIOMONTANUS",
                             "CAMPANUS",
                             "EQUAL",
-                            "PORPHYRY"
+                            "PORPHYRY",
+                            "TOPOCENTRIC",
+                            "ALCABITIUS",
+                            "MORINUS",
+                            "MERIDIAN",
+                            "EQUAL_MC",
+                            "VEHLOW"
                           ]
                         },
                         "zodiacSystem": {
@@ -11053,7 +11233,7 @@
                           "type": "boolean"
                         },
                         "houseSystemFallback": {
-                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry.",
+                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
                           "type": "string",
                           "enum": [
                             "PORPHYRY"
@@ -11331,7 +11511,13 @@
                       "REGIOMONTANUS",
                       "CAMPANUS",
                       "EQUAL",
-                      "PORPHYRY"
+                      "PORPHYRY",
+                      "TOPOCENTRIC",
+                      "ALCABITIUS",
+                      "MORINUS",
+                      "MERIDIAN",
+                      "EQUAL_MC",
+                      "VEHLOW"
                     ]
                   },
                   "zodiacSystem": {
@@ -11802,7 +11988,13 @@
                             "REGIOMONTANUS",
                             "CAMPANUS",
                             "EQUAL",
-                            "PORPHYRY"
+                            "PORPHYRY",
+                            "TOPOCENTRIC",
+                            "ALCABITIUS",
+                            "MORINUS",
+                            "MERIDIAN",
+                            "EQUAL_MC",
+                            "VEHLOW"
                           ]
                         },
                         "zodiacSystem": {
@@ -11820,7 +12012,7 @@
                           "type": "boolean"
                         },
                         "houseSystemFallback": {
-                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry.",
+                          "description": "Present when `houseSystem` could not be calculated at this latitude and the houses were computed with this system instead. Placidus and Koch have no solution inside the polar circles (beyond about 66.56° N/S), where Swiss Ephemeris substitutes Porphyry. Topocentric is given the same substitution there: Swiss Ephemeris still returns cusps for it, but they run out of order and the MC flips to the IC.",
                           "type": "string",
                           "enum": [
                             "PORPHYRY"
