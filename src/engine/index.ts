@@ -441,16 +441,18 @@ export function calculateSolarReturn(params: {
   zodiacSystem?: ZodiacSystem;
 } & EngineFilterParams): NatalChartData {
   const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
-  // 1. Get natal Sun longitude (always tropical for finding the return moment)
+  // 1. Get natal Sun longitude in the chart's zodiac. A sidereal return is the
+  //    Sun's return to its sidereal natal degree: later than the tropical one by
+  //    the ayanamsha's drift since birth (~20 min per year of age).
   const natalJd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
-  const natalPlanets = calcPlanets(natalJd, ['SUN']);
+  const natalPlanets = calcPlanets(natalJd, ['SUN'], zodiac);
   const natalSun = natalPlanets.find(p => p.id === 'SUN');
   if (!natalSun) throw new Error('Could not calculate natal Sun position');
 
   // 2. Find the exact JD of the solar return
   const { year: birthYear, month: birthMonth, day: birthDay } = parseDateString(params.birthDate);
   const solarReturnJd = findSolarReturnJD(
-    natalSun.longitude, birthYear, birthMonth, birthDay, params.year,
+    natalSun.longitude, birthYear, birthMonth, birthDay, params.year, zodiac,
   );
 
   // 3. Calculate full chart at that JD using return location
@@ -492,9 +494,9 @@ export function calculateLunarReturn(params: {
   zodiacSystem?: ZodiacSystem;
 } & EngineFilterParams): NatalChartData {
   const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
-  // 1. Get natal Moon longitude (always tropical for finding the return moment)
+  // 1. Get natal Moon longitude in the chart's zodiac (see the solar return).
   const natalJd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
-  const natalPlanets = calcPlanets(natalJd, ['MOON']);
+  const natalPlanets = calcPlanets(natalJd, ['MOON'], zodiac);
   const natalMoon = natalPlanets.find(p => p.id === 'MOON');
   if (!natalMoon) throw new Error('Could not calculate natal Moon position');
 
@@ -504,6 +506,7 @@ export function calculateLunarReturn(params: {
     natalMoon.longitude,
     buildJulianDay(params.targetDate, null, params.returnUtcOffsetMinutes),
     1,
+    zodiac,
   );
 
   // 3. Calculate full chart at that JD using return location
@@ -537,14 +540,16 @@ export function listLunarReturns(params: {
   utcOffsetMinutes: number;
   year: number;
   returnUtcOffsetMinutes: number;
+  zodiacSystem?: ZodiacSystem;
 }): { returns: { julianDay: number; datetime: string }[] } {
+  const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
   const natalJd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
-  const natalPlanets = calcPlanets(natalJd, ['MOON']);
+  const natalPlanets = calcPlanets(natalJd, ['MOON'], zodiac);
   const natalMoon = natalPlanets.find(p => p.id === 'MOON');
   if (!natalMoon) throw new Error('Could not calculate natal Moon position');
   return {
     returns: listLunarReturnsInYear(
-      natalMoon.longitude, params.year, params.returnUtcOffsetMinutes,
+      natalMoon.longitude, params.year, params.returnUtcOffsetMinutes, zodiac,
     ),
   };
 }

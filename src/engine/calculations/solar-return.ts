@@ -1,4 +1,5 @@
 import { calcSinglePlanet } from '../sweph-adapter.js';
+import type { ZodiacSystem } from '../types.js';
 import { toJulianDay } from '../../utils/date.js';
 
 /**
@@ -6,6 +7,7 @@ import { toJulianDay } from '../../utils/date.js';
  *
  * Uses binary search within a 40-day window around the target year's birthday.
  * Handles the 360/0 wraparound (Pisces/Aries boundary).
+ * natalSunLongitude must be in the same zodiac as `zodiacSystem`.
  */
 export function findSolarReturnJD(
   natalSunLongitude: number,
@@ -13,6 +15,7 @@ export function findSolarReturnJD(
   birthMonth: number,
   birthDay: number,
   targetYear: number,
+  zodiacSystem?: ZodiacSystem,
 ): number {
   // Search window: target year birthday -10 days to +30 days
   let lo = toJulianDay(targetYear, birthMonth, birthDay, 0) - 10;
@@ -31,7 +34,7 @@ export function findSolarReturnJD(
   // Evaluate: positive means Sun hasn't reached natal longitude yet (go later),
   // negative means it passed (go earlier).
   function evaluate(jd: number): number {
-    const sun = calcSinglePlanet(jd, 'SUN');
+    const sun = calcSinglePlanet(jd, 'SUN', zodiacSystem);
     return lonDiff(sun.longitude, natalSunLongitude);
   }
 
