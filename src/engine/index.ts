@@ -7,6 +7,7 @@ import { findSolarReturnJD } from './calculations/solar-return.js';
 import { findLunarReturnJD, listLunarReturnsInYear } from './calculations/lunar-return.js';
 import { midpointLongitude } from './calculations/composite.js';
 import { compositeHouseCusps, compositeMcIsTenthCusp } from './calculations/composite-houses.js';
+import { midpointJulianDay, midpointPlace } from './calculations/davison.js';
 import { calculateVocPeriods } from './calculations/voc-moon.js';
 import { computeTransitEvents, shiftedAnglesFor, signedAspectOrb } from './calculations/transit-events.js';
 import { analyzeChart } from './calculations/chart-analysis.js';
@@ -834,5 +835,88 @@ export function calculateAstromap(params: {
       julianDay: jd,
       planetCount: planets.length,
     },
+  };
+}
+
+export interface DavisonMidpoint {
+  julianDay: number;
+  lat: number;
+  lon: number;
+}
+
+/**
+ * Davison relationship chart: a real chart cast for the moment halfway between
+ * the two births (UT) at the midpoint of the two birthplaces (see
+ * calculations/davison.ts for how the place is averaged). Unlike the composite,
+ * every body, house and angle is an actual sky position at that moment.
+ */
+export function calculateDavison(params: {
+  personA: Parameters<typeof calculateNatal>[0];
+  personB: Parameters<typeof calculateNatal>[0];
+} & EngineFilterParams): NatalChartData & { midpoint: DavisonMidpoint } {
+  const houseSystem = params.personA.houseSystem;
+  const zodiac: ZodiacSystem = params.personA.zodiacSystem ?? 'tropical';
+  const jdA = buildJulianDay(params.personA.birthDate, params.personA.birthTime, params.personA.utcOffsetMinutes);
+  const jdB = buildJulianDay(params.personB.birthDate, params.personB.birthTime, params.personB.utcOffsetMinutes);
+  const jd = midpointJulianDay(jdA, jdB);
+  const place = midpointPlace(params.personA, params.personB);
+
+  const planets = calcPlanets(jd, resolveEnabledBodies(params.enabledPlanets, params.enabledPoints), zodiac);
+  const aspects = detectAspects(planets, 1, toAspectConfig(params));
+  const { houses, angles, houseSystemFallback } = calcHouses(jd, place.lat, place.lon, houseSystem, zodiac);
+  computePartOfFortune(angles, planets);
+  const result: NatalChartData & { midpoint: DavisonMidpoint } = {
+    planets, houses, angles, aspects,
+    midpoint: { julianDay: jd, lat: place.lat, lon: place.lon },
+    meta: {
+      schemaVersion: SCHEMA_VERSION,
+      calculatedAt: new Date().toISOString(),
+      houseSystem,
+      zodiacSystem: zodiac,
+      julianDay: jd,
+      // Either birth resting on an assumed noon moves the midpoint moment with it.
+      birthTimeAssumed: params.personA.birthTime === null || params.personB.birthTime === null,
+      ...(houseSystemFallback ? { houseSystemFallback } : {}),
+    },
+  };
+  if (params.enabledArabicParts && params.enabledArabicParts.length > 0 && houses) {
+    result.arabicParts = computeArabicParts(angles, planets, params.enabledArabicParts);
+  }
+  if (params.includeFixedStars) {
+    result.fixedStars = calculateFixedStars(jd);
+  }
+  return result;
+}
+
+/**
+ * Transits over the Davison chart: the Davison chart (static) with the transiting
+ * sky of the requested moment, and the aspects from Davison bodies to transiting ones.
+ * Same shape as the composite transit, with the Davison chart in place of the composite.
+ */
+export function calculateDavisonTransit(params: {
+  personA: Parameters<typeof calculateNatal>[0];
+  personB: Parameters<typeof calculateNatal>[0];
+  transit: Parameters<typeof calculateTransit>[0];
+} & EngineFilterParams): {
+  davison: NatalChartData & { midpoint: DavisonMidpoint };
+  transit: NatalChartData;
+  crossAspects: import('./types.js').Aspect[];
+  meta: { schemaVersion: number; calculatedAt: string };
+} {
+  const filterParams: EngineFilterParams = {
+    enabledPlanets: params.enabledPlanets,
+    enabledPoints: params.enabledPoints,
+    enabledAspects: params.enabledAspects,
+    aspectOrbs: params.aspectOrbs,
+    sunOrbBonus: params.sunOrbBonus,
+    moonOrbBonus: params.moonOrbBonus,
+  };
+  const davison = calculateDavison({ personA: params.personA, personB: params.personB, ...filterParams });
+  const transit = calculateTransit({ ...params.transit, ...filterParams });
+  // Davison is static, transit moves → applying is meaningful for the cross-aspects.
+  const crossAspects = detectCrossAspects(davison.planets, transit.planets, toAspectConfig(filterParams), true);
+  return {
+    davison, transit, crossAspects,
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString() },
   };
 }
