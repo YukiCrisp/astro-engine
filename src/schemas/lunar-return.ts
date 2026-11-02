@@ -29,6 +29,7 @@ export const LunarReturnListRequestSchema = z.object({
   returnLat: z.number().min(-90).max(90).describe('Latitude for the return chart location').meta({ example: 35.6762 }),
   returnLon: z.number().min(-180).max(180).describe('Longitude for the return chart location').meta({ example: 139.6503 }),
   returnUtcOffsetMinutes: z.number().int().min(-840).max(840).describe('UTC offset at the return location').meta({ example: 540 }),
+  zodiacSystem: z.enum(['tropical', 'sidereal']).default('tropical').describe('Zodiac system (tropical or sidereal/Lahiri); a sidereal return is the Moon\'s return to its sidereal natal degree'),
 });
 
 export type LunarReturnListRequest = z.infer<typeof LunarReturnListRequestSchema>;
