@@ -3901,6 +3901,78 @@
                         "additionalProperties": false
                       }
                     },
+                    "ingresses": {
+                      "description": "Sign and natal-house ingresses of the progressed Sun and Moon in the window (progressions only; houses only with a known birth time)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "mover": {
+                            "type": "string",
+                            "enum": [
+                              "SUN",
+                              "MOON",
+                              "MERCURY",
+                              "VENUS",
+                              "MARS",
+                              "JUPITER",
+                              "SATURN",
+                              "URANUS",
+                              "NEPTUNE",
+                              "PLUTO",
+                              "TRUE_NODE",
+                              "CHIRON",
+                              "MEAN_NODE",
+                              "MEAN_LILITH",
+                              "TRUE_LILITH",
+                              "PHOLUS",
+                              "CERES",
+                              "PALLAS",
+                              "JUNO",
+                              "VESTA"
+                            ]
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "SIGN",
+                              "HOUSE"
+                            ]
+                          },
+                          "sign": {
+                            "type": "string",
+                            "enum": [
+                              "ARI",
+                              "TAU",
+                              "GEM",
+                              "CAN",
+                              "LEO",
+                              "VIR",
+                              "LIB",
+                              "SCO",
+                              "SAG",
+                              "CAP",
+                              "AQU",
+                              "PIS"
+                            ]
+                          },
+                          "house": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 12
+                          },
+                          "at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "mover",
+                          "kind",
+                          "at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
                     "meta": {
                       "type": "object",
                       "properties": {
@@ -3927,6 +3999,7 @@
                     "window",
                     "method",
                     "rows",
+                    "ingresses",
                     "meta"
                   ],
                   "additionalProperties": false

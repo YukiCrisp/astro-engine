@@ -2,10 +2,10 @@ import { calcSinglePlanet } from '../sweph-adapter.js';
 import { fromJulianDay, parseDateString, toJulianDay } from '../../utils/date.js';
 import { SCHEMA_VERSION } from '../types.js';
 import type {
-  ForecastAspectType, ForecastData, ForecastMethod, ForecastRow, ForecastTarget,
-  NatalChartData, PlanetId, ZodiacSystem,
+  ForecastAspectType, ForecastData, ForecastIngress, ForecastMethod, ForecastRow, ForecastTarget,
+  NatalChartData, PlanetId, SignName, ZodiacSystem,
 } from '../types.js';
-import { signedAspectOrb, shiftedAnglesFor } from './transit-events.js';
+import { houseIndexForLongitude, signedAspectOrb, shiftedAnglesFor } from './transit-events.js';
 import { progressedJdFromRealJd, type ProgressionClock } from './progressions.js';
 
 const ASPECT_ANGLES: Record<ForecastAspectType, number> = {
@@ -21,6 +21,13 @@ const ASPECT_ANGLES: Record<ForecastAspectType, number> = {
  * has gone all the way round and stays a separate row.
  */
 export const MERGE_MAX_ORB_DEG = 30;
+
+/** Progressed bodies whose sign and house ingresses are listed (2026-11-04 Yuki). */
+const INGRESS_MOVERS: readonly PlanetId[] = ['SUN', 'MOON'];
+
+const SIGNS: readonly SignName[] = [
+  'ARI', 'TAU', 'GEM', 'CAN', 'LEO', 'VIR', 'LIB', 'SCO', 'SAG', 'CAP', 'AQU', 'PIS',
+];
 
 /** Two adjacent samples straddle the ±180° jump of the signed orb rather than an exact when their orbs add up past this. */
 const WRAP_GUARD_DEG = 90;
@@ -137,10 +144,13 @@ export function computeForecast(params: ForecastComputationParams): ForecastData
     x.segments[0].enter.localeCompare(y.segments[0].enter) ||
     params.movers.indexOf(x.mover) - params.movers.indexOf(y.mover));
 
+  const ingresses = method === 'progressed' ? progressedIngresses() : [];
+
   return {
     window: { startDate: params.startDate, endDate: params.endDate },
     method,
     rows,
+    ingresses,
     meta: {
       schemaVersion: SCHEMA_VERSION,
       calculatedAt: new Date().toISOString(),
@@ -313,6 +323,46 @@ export function computeForecast(params: ForecastComputationParams): ForecastData
         closest,
       };
     }
+  }
+
+  /**
+   * Sign ingresses of the progressed Sun and Moon inside the window, and their
+   * natal-house ingresses when the birth time (and so the houses) is known.
+   * The progressed Moon takes about 2.5 years per sign, so weekly samples never
+   * skip one; each change is narrowed to a day.
+   */
+  function progressedIngresses(): ForecastIngress[] {
+    const houses = birthTimeKnown ? natal.houses : null;
+    const out: ForecastIngress[] = [];
+    for (const mover of params.movers.filter((m) => INGRESS_MOVERS.includes(m))) {
+      const signOf = (t: number) => Math.floor(positionAt(mover, t).lon / 30) % 12;
+      const houseOf = (t: number) => (houses ? houseIndexForLongitude(positionAt(mover, t).lon, houses) : 0);
+      const find = (index: (t: number) => number, kind: 'SIGN' | 'HOUSE') => {
+        let t0 = windowStart;
+        let i0 = index(t0);
+        while (t0 < windowEnd) {
+          const t1 = Math.min(t0 + spec.step, windowEnd);
+          const i1 = index(t1);
+          if (i1 !== i0) {
+            let a = t0;
+            let b = t1;
+            while (b - a > spec.exactTolerance) {
+              const mid = (a + b) / 2;
+              if (index(mid) === i0) a = mid;
+              else b = mid;
+            }
+            out.push(kind === 'SIGN'
+              ? { mover, kind, sign: SIGNS[i1], at: fromJulianDay(b) }
+              : { mover, kind, house: i1, at: fromJulianDay(b) });
+          }
+          t0 = t1;
+          i0 = i1;
+        }
+      };
+      find(signOf, 'SIGN');
+      if (houses) find(houseOf, 'HOUSE');
+    }
+    return out.sort((x, y) => x.at.localeCompare(y.at));
   }
 
   /** The zero of `f` between lo and hi (f(lo) has the sign of `fLo`), to the method's tolerance. */

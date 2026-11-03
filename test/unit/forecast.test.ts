@@ -197,6 +197,44 @@ describe('calculateForecast — progressed', () => {
   });
 });
 
+describe('calculateForecast — progressed ingresses', () => {
+  it('lists the progressed Moon entering signs and natal houses, narrowed to a day', () => {
+    const moonSigns = progressedDecade.ingresses.filter((i) => i.mover === 'MOON' && i.kind === 'SIGN');
+    // About 2.5 years per sign: three to five in ten years.
+    expect(moonSigns.length).toBeGreaterThanOrEqual(3);
+    expect(moonSigns.length).toBeLessThanOrEqual(5);
+    for (const i of moonSigns) {
+      const jd = isoToJd(i.at);
+      const before = calcSinglePlanet(progressedJdFromRealJd(clock, jd - 1.5), 'MOON').longitude;
+      const after = calcSinglePlanet(progressedJdFromRealJd(clock, jd + 0.5), 'MOON').longitude;
+      expect(Math.floor(after / 30)).not.toBe(Math.floor(before / 30));
+      expect(['ARI', 'TAU', 'GEM', 'CAN', 'LEO', 'VIR', 'LIB', 'SCO', 'SAG', 'CAP', 'AQU', 'PIS'][Math.floor(after / 30)]).toBe(i.sign);
+    }
+    expect(progressedDecade.ingresses.some((i) => i.kind === 'HOUSE')).toBe(true);
+    for (const i of progressedDecade.ingresses) {
+      expect(i.at >= '2026-11-04' && i.at < '2036-11-04').toBe(true);
+    }
+  });
+
+  it('leaves out house ingresses without a birth time, and has none for transits', () => {
+    const noTime = calculateForecast({
+      ...base, birthTime: null, method: 'progressed', startDate: '2026-11-04', endDate: '2036-11-03',
+      movers: ['SUN', 'MOON'], targets: ['SUN'], aspects: ['CONJUNCTION'], orb: 1,
+    });
+    expect(noTime.ingresses.length).toBeGreaterThan(0);
+    expect(noTime.ingresses.every((i) => i.kind === 'SIGN')).toBe(true);
+    expect(transitYear.ingresses).toEqual([]);
+  });
+
+  it('lists ingresses only for the movers asked for', () => {
+    const venusOnly = calculateForecast({
+      ...base, method: 'progressed', startDate: '2026-11-04', endDate: '2036-11-03',
+      movers: ['VENUS'], targets: ['SUN'], aspects: ['CONJUNCTION'], orb: 1,
+    });
+    expect(venusOnly.ingresses).toEqual([]);
+  });
+});
+
 describe('ForecastRequestSchema', () => {
   const request = {
     ...base, method: 'transit', startDate: '2026-11-04', endDate: '2027-11-03',

@@ -354,6 +354,13 @@ export const ForecastDataSchema = z.object({
     exacts: z.array(z.object({ at: z.string(), retrograde: z.boolean() })).describe('Exact moments (UT ISO)'),
     closest: z.object({ at: z.string(), orb: z.number() }),
   })),
+  ingresses: z.array(z.object({
+    mover: PlanetIdEnum,
+    kind: z.enum(['SIGN', 'HOUSE']),
+    sign: z.enum(['ARI', 'TAU', 'GEM', 'CAN', 'LEO', 'VIR', 'LIB', 'SCO', 'SAG', 'CAP', 'AQU', 'PIS']).optional(),
+    house: z.number().int().min(1).max(12).optional(),
+    at: z.string(),
+  })).describe('Sign and natal-house ingresses of the progressed Sun and Moon in the window (progressions only; houses only with a known birth time)'),
   meta: z.object({
     schemaVersion: z.number(),
     calculatedAt: z.string(),

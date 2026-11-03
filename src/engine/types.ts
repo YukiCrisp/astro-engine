@@ -321,10 +321,24 @@ export interface ForecastRow {
   closest: { at: string; orb: number };
 }
 
+/** A progressed Sun or Moon entering a sign, or a natal house (progressions only). */
+export interface ForecastIngress {
+  mover: PlanetId;
+  kind: 'SIGN' | 'HOUSE';
+  /** The sign entered (kind SIGN). */
+  sign?: SignName;
+  /** The natal house entered, 1-12 (kind HOUSE). Left out when the birth time is unknown. */
+  house?: number;
+  /** UT ISO, to about a day. */
+  at: string;
+}
+
 export interface ForecastData {
   window: { startDate: string; endDate: string };
   method: ForecastMethod;
   rows: ForecastRow[];
+  /** Sign and natal-house ingresses of the progressed Sun and Moon inside the window. Empty for transits. */
+  ingresses: ForecastIngress[];
   meta: {
     schemaVersion: number;
     calculatedAt: string;
