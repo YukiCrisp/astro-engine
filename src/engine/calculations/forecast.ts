@@ -28,7 +28,7 @@ const WRAP_GUARD_DEG = 90;
 interface MethodSpec {
   /** Sampling step in real days. */
   step: number;
-  /** Search margin on each side of the window, before any widening (days). */
+  /** Search margin on each side of the window, before any widening (days). Longer than `maxGap`, so most rows settle on the first pass. */
   initialPad: number;
   /** Widest margin on each side (days). A row still cut there gets openStart / openEnd. */
   maxPad: number;
@@ -46,10 +46,10 @@ interface MethodSpec {
 const SPECS: Record<ForecastMethod, MethodSpec> = {
   // Daily noon samples. Pluto and Neptune stay inside a 3° orb for 3–5 years,
   // so the margin widens up to ten years before a row is called cut.
-  transit: { step: 1, initialPad: 400, maxPad: 3653, exactTolerance: 10 / 1440, maxGap: 450 },
+  transit: { step: 1, initialPad: 500, maxPad: 3653, exactTolerance: 10 / 1440, maxGap: 450 },
   // Weekly samples: the progressed Moon moves about 0.25° a week. A progressed
   // Venus or Mars near its station can hold one aspect for over a decade.
-  progressed: { step: 7, initialPad: 730, maxPad: 10958, exactTolerance: 1, maxGap: 1826 },
+  progressed: { step: 7, initialPad: 1900, maxPad: 10958, exactTolerance: 1, maxGap: 1826 },
 };
 
 export interface ForecastComputationParams {

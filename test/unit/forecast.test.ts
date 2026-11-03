@@ -212,6 +212,13 @@ describe('ForecastRequestSchema', () => {
     expect(ForecastRequestSchema.safeParse({ ...request, endDate: '2036-11-03' }).success).toBe(true);
   });
 
+  it('rejects dates that do not exist or fall outside the ephemeris', () => {
+    expect(ForecastRequestSchema.safeParse({ ...request, endDate: '2026-13-01' }).success).toBe(false);
+    expect(ForecastRequestSchema.safeParse({ ...request, endDate: '2027-02-30' }).success).toBe(false);
+    expect(ForecastRequestSchema.safeParse({ ...request, startDate: '9999-01-01', endDate: '9999-12-31' }).success).toBe(false);
+    expect(ForecastRequestSchema.safeParse({ ...request, endDate: '2026-11-03' }).success).toBe(false);
+  });
+
   it('allows the fast transiting planets only in windows up to 92 days', () => {
     expect(ForecastRequestSchema.safeParse({ ...request, movers: ['MARS'] }).success).toBe(false);
     expect(ForecastRequestSchema.safeParse({ ...request, movers: ['MARS'], endDate: '2027-02-03' }).success).toBe(true);

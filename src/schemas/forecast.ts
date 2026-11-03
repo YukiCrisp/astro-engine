@@ -25,7 +25,26 @@ const TargetEnum = z.enum([
   'TRUE_NODE', 'CHIRON', 'ASC', 'MC',
 ]);
 const ForecastAspectEnum = z.enum(['CONJUNCTION', 'OPPOSITION', 'TRINE', 'SQUARE', 'SEXTILE']);
-const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+/** The years the shipped ephemeris files cover (seas_18 and seas_24: 1800–2999). */
+const WINDOW_MIN_YEAR = 1800;
+const WINDOW_MAX_YEAR = 2999;
+
+function isRealDate(v: string): boolean {
+  const [y, m, d] = v.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+}
+
+/**
+ * The shape check alone let "2026-13-01" through: Date.parse gave NaN, every
+ * day-count guard compared false, and the engine rolled month 13 into the
+ * next year — a window of any length.
+ */
+const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(isRealDate, { message: 'Must be a real date' });
+const windowDate = dateString.refine((v) => {
+  const y = Number(v.slice(0, 4));
+  return y >= WINDOW_MIN_YEAR && y <= WINDOW_MAX_YEAR;
+}, { message: `Must be between ${WINDOW_MIN_YEAR} and ${WINDOW_MAX_YEAR}` });
 
 export const ForecastRequestSchema = z.object({
   birthDate: dateString.describe('Birth date in YYYY-MM-DD format').meta({ example: '1990-04-15' }),
@@ -36,15 +55,15 @@ export const ForecastRequestSchema = z.object({
   houseSystem: HouseSystemEnum.default('PLACIDUS').describe('House system (used for the natal ASC / MC targets)'),
   zodiacSystem: z.enum(['tropical', 'sidereal']).default('tropical').describe('Zodiac system (tropical or sidereal/Lahiri)'),
   method: z.enum(['transit', 'progressed']).describe('Transiting planets, or secondary progressions (a day for a year)'),
-  startDate: dateString.describe('Window start date in YYYY-MM-DD format').meta({ example: '2026-11-04' }),
-  endDate: dateString.describe('Window end date in YYYY-MM-DD format (inclusive)').meta({ example: '2027-11-03' }),
+  startDate: windowDate.describe('Window start date in YYYY-MM-DD format').meta({ example: '2026-11-04' }),
+  endDate: windowDate.describe('Window end date in YYYY-MM-DD format (inclusive)').meta({ example: '2027-11-03' }),
   movers: z.array(MoverEnum).min(1).describe('Moving bodies. Transit: Sun–Pluto and Chiron except the Moon (Sun–Mars only in windows up to 92 days). Progressed: Sun–Mars.'),
   targets: z.array(TargetEnum).min(1).describe('Natal points aspected. ASC / MC are skipped when the birth time is unknown.'),
   aspects: z.array(ForecastAspectEnum).min(1).describe('Major aspects to look for'),
   orb: z.number().min(0.1).max(10).describe('Orb in degrees, one value for every aspect').meta({ example: 3 }),
 }).superRefine((v, ctx) => {
   const days = inclusiveDayCount(v.startDate, v.endDate);
-  if (!(v.endDate >= v.startDate) || days > FORECAST_MAX_DAYS) {
+  if (!Number.isFinite(days) || days < 1 || days > FORECAST_MAX_DAYS) {
     ctx.addIssue({ code: 'custom', path: ['endDate'], message: `Window must be 1-${FORECAST_MAX_DAYS} days` });
   }
   const allowed: readonly string[] = v.method === 'transit' ? FORECAST_TRANSIT_MOVERS : FORECAST_PROGRESSED_MOVERS;
