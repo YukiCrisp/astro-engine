@@ -1,5 +1,6 @@
 import { calcSinglePlanet } from '../sweph-adapter.js';
 import { toJulianDay, fromJulianDay } from '../../utils/date.js';
+import type { ZodiacSystem } from '../types.js';
 
 /**
  * Find the Julian Day when the transiting Moon returns to the natal Moon longitude.
@@ -10,11 +11,13 @@ import { toJulianDay, fromJulianDay } from '../../utils/date.js';
  * @param natalMoonLongitude  Natal Moon longitude in degrees
  * @param searchStartJD       Julian Day to start searching from
  * @param searchDirection     1 = forward (next return), -1 = backward (previous return)
+ * @param zodiacSystem        Zodiac of natalMoonLongitude (sidereal returns differ by the ayanamsha's drift since birth)
  */
 export function findLunarReturnJD(
   natalMoonLongitude: number,
   searchStartJD: number,
   searchDirection: 1 | -1 = 1,
+  zodiacSystem?: ZodiacSystem,
 ): number {
   // Moon cycle is ~27.3 days. Search window accordingly.
   const windowStart = searchDirection === 1 ? searchStartJD - 2 : searchStartJD - 30;
@@ -35,7 +38,7 @@ export function findLunarReturnJD(
   // Evaluate: positive means Moon hasn't reached natal longitude yet (go later),
   // negative means it passed (go earlier).
   function evaluate(jd: number): number {
-    const moon = calcSinglePlanet(jd, 'MOON');
+    const moon = calcSinglePlanet(jd, 'MOON', zodiacSystem);
     return lonDiff(moon.longitude, natalMoonLongitude);
   }
 
@@ -120,6 +123,7 @@ export function listLunarReturnsInYear(
   natalMoonLongitude: number,
   year: number,
   returnUtcOffsetMinutes: number,
+  zodiacSystem?: ZodiacSystem,
 ): { julianDay: number; datetime: string }[] {
   const offsetDays = returnUtcOffsetMinutes / 60 / 24;
   // Local wall-clock ISO for a UT Julian Day (shift UT → local, then format).
@@ -130,7 +134,7 @@ export function listLunarReturnsInYear(
   let startJd = toJulianDay(year, 1, 1, 0) - offsetDays - 3;
   // Safety bound: at most 14 returns/year + a couple of out-of-range probes.
   for (let i = 0; i < 17; i++) {
-    const jd = findLunarReturnJD(natalMoonLongitude, startJd, 1);
+    const jd = findLunarReturnJD(natalMoonLongitude, startJd, 1, zodiacSystem);
     const iso = toLocalIso(jd);
     const y = Number(iso.slice(0, 4));
     if (y > year) break;

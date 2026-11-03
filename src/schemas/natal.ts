@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PlanetIdEnum, AspectTypeEnum, ArabicPartIdEnum } from './responses.js';
+import { PlanetIdEnum, AspectTypeEnum, ArabicPartIdEnum, HouseSystemEnum } from './responses.js';
 
 export const PointIdEnum = z.enum([
   'TRUE_NODE', 'MEAN_NODE', 'MEAN_LILITH', 'TRUE_LILITH',
@@ -22,7 +22,7 @@ export const NatalRequestSchema = z.object({
   lat: z.number().min(-90).max(90).describe('Latitude of birth location').meta({ example: 48.4011 }),
   lon: z.number().min(-180).max(180).describe('Longitude of birth location').meta({ example: 9.9876 }),
   utcOffsetMinutes: z.number().int().min(-840).max(840).describe('UTC offset in minutes at time of birth').meta({ example: 60 }),
-  houseSystem: z.enum(['PLACIDUS', 'WHOLE_SIGN', 'KOCH', 'REGIOMONTANUS', 'CAMPANUS', 'EQUAL', 'PORPHYRY']).default('PLACIDUS').describe('House system'),
+  houseSystem: HouseSystemEnum.default('PLACIDUS').describe('House system'),
   zodiacSystem: z.enum(['tropical', 'sidereal']).default('tropical').describe('Zodiac system (tropical or sidereal/Lahiri)'),
 }).merge(EngineFilterSchema);
 export type NatalRequest = z.infer<typeof NatalRequestSchema>;

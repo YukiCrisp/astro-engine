@@ -6,7 +6,8 @@ import { calculateSolarArcPositions, directSolarArcAngles } from './calculations
 import { findSolarReturnJD } from './calculations/solar-return.js';
 import { findLunarReturnJD, listLunarReturnsInYear } from './calculations/lunar-return.js';
 import { midpointLongitude } from './calculations/composite.js';
-import { compositeHouseCusps } from './calculations/composite-houses.js';
+import { compositeHouseCusps, compositeMcIsTenthCusp } from './calculations/composite-houses.js';
+import { midpointJulianDay, midpointPlace } from './calculations/davison.js';
 import { calculateVocPeriods } from './calculations/voc-moon.js';
 import { computeTransitEvents, shiftedAnglesFor, signedAspectOrb } from './calculations/transit-events.js';
 import { analyzeChart } from './calculations/chart-analysis.js';
@@ -52,18 +53,22 @@ function computeArabicParts(
   planets: import('./types.js').PlanetPosition[],
   enabledParts: ArabicPartId[],
 ): import('./types.js').ArabicPartResult[] {
-  const sun = planets.find(p => p.id === 'SUN');
-  const moon = planets.find(p => p.id === 'MOON');
-  const venus = planets.find(p => p.id === 'VENUS');
-  if (!sun || !moon || !venus) return [];
+  const lonOf = (id: PlanetId) => planets.find(p => p.id === id)?.longitude;
+  const sun = lonOf('SUN');
+  const moon = lonOf('MOON');
+  if (sun === undefined || moon === undefined) return [];
 
   // Sect from the ASC–DSC axis, the same rule computePartOfFortune uses, so the
   // wheel's ⊗ and the PART_OF_FORTUNE entry always agree.
-  const isDayChart = isDayChartByAngles(sun.longitude, angles.asc);
+  const isDayChart = isDayChartByAngles(sun, angles.asc);
 
   return calculateArabicParts(
-    angles.asc, sun.longitude, moon.longitude,
-    venus.longitude, angles.dsc, isDayChart, enabledParts,
+    {
+      asc: angles.asc, dsc: angles.dsc, sun, moon,
+      mercury: lonOf('MERCURY'), venus: lonOf('VENUS'), mars: lonOf('MARS'),
+      jupiter: lonOf('JUPITER'), saturn: lonOf('SATURN'),
+    },
+    isDayChart, enabledParts,
   );
 }
 
@@ -308,15 +313,14 @@ export function calculateComposite(params: {
     const compositeAsc = midpointLongitude(chartA.angles.asc, chartB.angles.asc);
     const compositeMc = midpointLongitude(chartA.angles.mc, chartB.angles.mc);
 
-    // Quadrant cusps average each natal house's offset from its ASC; Whole
-    // Sign starts at the ASC sign boundary, while Equal starts at the ASC.
+    // Quadrant cusps average each natal house's offset from its ASC; the
+    // equal systems count from the composite ASC or MC (see compositeHouseCusps).
     const houses = compositeHouseCusps(
-      houseSystem, compositeAsc,
-      chartA.houses, chartA.angles.asc,
-      chartB.houses, chartB.angles.asc,
+      houseSystem, { asc: compositeAsc, mc: compositeMc },
+      chartA.houses, chartA.angles,
+      chartB.houses, chartB.angles,
     );
-    const mc = houseSystem === 'EQUAL' || houseSystem === 'WHOLE_SIGN'
-      ? compositeMc : houses[9].longitude;
+    const mc = compositeMcIsTenthCusp(houseSystem) ? houses[9].longitude : compositeMc;
 
     const midJd = (chartA.meta.julianDay + chartB.meta.julianDay) / 2;
 
@@ -437,16 +441,18 @@ export function calculateSolarReturn(params: {
   zodiacSystem?: ZodiacSystem;
 } & EngineFilterParams): NatalChartData {
   const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
-  // 1. Get natal Sun longitude (always tropical for finding the return moment)
+  // 1. Get natal Sun longitude in the chart's zodiac. A sidereal return is the
+  //    Sun's return to its sidereal natal degree: later than the tropical one by
+  //    the ayanamsha's drift since birth (~20 min per year of age).
   const natalJd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
-  const natalPlanets = calcPlanets(natalJd, ['SUN']);
+  const natalPlanets = calcPlanets(natalJd, ['SUN'], zodiac);
   const natalSun = natalPlanets.find(p => p.id === 'SUN');
   if (!natalSun) throw new Error('Could not calculate natal Sun position');
 
   // 2. Find the exact JD of the solar return
   const { year: birthYear, month: birthMonth, day: birthDay } = parseDateString(params.birthDate);
   const solarReturnJd = findSolarReturnJD(
-    natalSun.longitude, birthYear, birthMonth, birthDay, params.year,
+    natalSun.longitude, birthYear, birthMonth, birthDay, params.year, zodiac,
   );
 
   // 3. Calculate full chart at that JD using return location
@@ -488,9 +494,9 @@ export function calculateLunarReturn(params: {
   zodiacSystem?: ZodiacSystem;
 } & EngineFilterParams): NatalChartData {
   const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
-  // 1. Get natal Moon longitude (always tropical for finding the return moment)
+  // 1. Get natal Moon longitude in the chart's zodiac (see the solar return).
   const natalJd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
-  const natalPlanets = calcPlanets(natalJd, ['MOON']);
+  const natalPlanets = calcPlanets(natalJd, ['MOON'], zodiac);
   const natalMoon = natalPlanets.find(p => p.id === 'MOON');
   if (!natalMoon) throw new Error('Could not calculate natal Moon position');
 
@@ -500,6 +506,7 @@ export function calculateLunarReturn(params: {
     natalMoon.longitude,
     buildJulianDay(params.targetDate, null, params.returnUtcOffsetMinutes),
     1,
+    zodiac,
   );
 
   // 3. Calculate full chart at that JD using return location
@@ -533,14 +540,16 @@ export function listLunarReturns(params: {
   utcOffsetMinutes: number;
   year: number;
   returnUtcOffsetMinutes: number;
+  zodiacSystem?: ZodiacSystem;
 }): { returns: { julianDay: number; datetime: string }[] } {
+  const zodiac: ZodiacSystem = params.zodiacSystem ?? 'tropical';
   const natalJd = buildJulianDay(params.birthDate, params.birthTime, params.utcOffsetMinutes);
-  const natalPlanets = calcPlanets(natalJd, ['MOON']);
+  const natalPlanets = calcPlanets(natalJd, ['MOON'], zodiac);
   const natalMoon = natalPlanets.find(p => p.id === 'MOON');
   if (!natalMoon) throw new Error('Could not calculate natal Moon position');
   return {
     returns: listLunarReturnsInYear(
-      natalMoon.longitude, params.year, params.returnUtcOffsetMinutes,
+      natalMoon.longitude, params.year, params.returnUtcOffsetMinutes, zodiac,
     ),
   };
 }
@@ -831,5 +840,121 @@ export function calculateAstromap(params: {
       julianDay: jd,
       planetCount: planets.length,
     },
+  };
+}
+
+export interface DavisonMidpoint {
+  julianDay: number;
+  lat: number;
+  lon: number;
+}
+
+/**
+ * Davison relationship chart: a real chart cast for the moment halfway between
+ * the two births (UT) at the midpoint of the two birthplaces (see
+ * calculations/davison.ts for how the place is averaged). Unlike the composite,
+ * every body, house and angle is an actual sky position at that moment.
+ */
+export function calculateDavison(params: {
+  personA: Parameters<typeof calculateNatal>[0];
+  personB: Parameters<typeof calculateNatal>[0];
+} & EngineFilterParams): NatalChartData & { midpoint: DavisonMidpoint } {
+  const houseSystem = params.personA.houseSystem;
+  const zodiac: ZodiacSystem = params.personA.zodiacSystem ?? 'tropical';
+  const jdA = buildJulianDay(params.personA.birthDate, params.personA.birthTime, params.personA.utcOffsetMinutes);
+  const jdB = buildJulianDay(params.personB.birthDate, params.personB.birthTime, params.personB.utcOffsetMinutes);
+  const jd = midpointJulianDay(jdA, jdB);
+  const place = midpointPlace(params.personA, params.personB);
+
+  const planets = calcPlanets(jd, resolveEnabledBodies(params.enabledPlanets, params.enabledPoints), zodiac);
+  const aspects = detectAspects(planets, 1, toAspectConfig(params));
+  const { houses, angles, houseSystemFallback } = calcHouses(jd, place.lat, place.lon, houseSystem, zodiac);
+  computePartOfFortune(angles, planets);
+  const result: NatalChartData & { midpoint: DavisonMidpoint } = {
+    planets, houses, angles, aspects,
+    midpoint: { julianDay: jd, lat: place.lat, lon: place.lon },
+    meta: {
+      schemaVersion: SCHEMA_VERSION,
+      calculatedAt: new Date().toISOString(),
+      houseSystem,
+      zodiacSystem: zodiac,
+      julianDay: jd,
+      // Either birth resting on an assumed noon moves the midpoint moment with it.
+      birthTimeAssumed: params.personA.birthTime === null || params.personB.birthTime === null,
+      ...(houseSystemFallback ? { houseSystemFallback } : {}),
+    },
+  };
+  if (params.enabledArabicParts && params.enabledArabicParts.length > 0 && houses) {
+    result.arabicParts = computeArabicParts(angles, planets, params.enabledArabicParts);
+  }
+  if (params.includeFixedStars) {
+    result.fixedStars = calculateFixedStars(jd);
+  }
+  return result;
+}
+
+/**
+ * Transits over the Davison chart: the Davison chart (static) with the transiting
+ * sky of the requested moment, and the aspects from Davison bodies to transiting ones.
+ * Same shape as the composite transit, with the Davison chart in place of the composite.
+ */
+export function calculateDavisonTransit(params: {
+  personA: Parameters<typeof calculateNatal>[0];
+  personB: Parameters<typeof calculateNatal>[0];
+  transit: Parameters<typeof calculateTransit>[0];
+} & EngineFilterParams): {
+  davison: NatalChartData & { midpoint: DavisonMidpoint };
+  transit: NatalChartData;
+  crossAspects: import('./types.js').Aspect[];
+  meta: { schemaVersion: number; calculatedAt: string };
+} {
+  const filterParams: EngineFilterParams = {
+    enabledPlanets: params.enabledPlanets,
+    enabledPoints: params.enabledPoints,
+    enabledAspects: params.enabledAspects,
+    aspectOrbs: params.aspectOrbs,
+    sunOrbBonus: params.sunOrbBonus,
+    moonOrbBonus: params.moonOrbBonus,
+  };
+  const davison = calculateDavison({ personA: params.personA, personB: params.personB, ...filterParams });
+  const transit = calculateTransit({ ...params.transit, ...filterParams });
+  // Davison is static, transit moves → applying is meaningful for the cross-aspects.
+  const crossAspects = detectCrossAspects(davison.planets, transit.planets, toAspectConfig(filterParams), true);
+  return {
+    davison, transit, crossAspects,
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString() },
+  };
+}
+
+/**
+ * Transits over a solar return: the solar return chart (static) with the transiting
+ * sky of the requested moment, and the aspects from return bodies to transiting ones.
+ * The return moment carries seconds, which a natal request (HH:MM) cannot, so the
+ * return is computed here rather than passed in as a chart moment.
+ */
+export function calculateSolarReturnTransit(params: {
+  solarReturn: Parameters<typeof calculateSolarReturn>[0];
+  transit: Parameters<typeof calculateTransit>[0];
+} & EngineFilterParams): {
+  solarReturn: NatalChartData;
+  transit: NatalChartData;
+  crossAspects: import('./types.js').Aspect[];
+  meta: { schemaVersion: number; calculatedAt: string };
+} {
+  const filterParams: EngineFilterParams = {
+    enabledPlanets: params.enabledPlanets,
+    enabledPoints: params.enabledPoints,
+    enabledAspects: params.enabledAspects,
+    aspectOrbs: params.aspectOrbs,
+    sunOrbBonus: params.sunOrbBonus,
+    moonOrbBonus: params.moonOrbBonus,
+  };
+  const solarReturn = calculateSolarReturn({ ...params.solarReturn, ...filterParams });
+  const transit = calculateTransit({ ...params.transit, ...filterParams });
+  // The return is static, transit moves → applying is meaningful for the cross-aspects.
+  const crossAspects = detectCrossAspects(solarReturn.planets, transit.planets, toAspectConfig(filterParams), true);
+  return {
+    solarReturn, transit, crossAspects,
+    meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString() },
   };
 }
