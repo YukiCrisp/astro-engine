@@ -230,8 +230,8 @@ describe('ForecastRequestSchema', () => {
     expect(ForecastRequestSchema.safeParse({ ...request, method: 'progressed', movers: ['JUPITER'] }).success).toBe(false);
   });
 
-  it('refuses progressions without a birth time', () => {
-    expect(ForecastRequestSchema.safeParse({ ...request, method: 'progressed', movers: ['SUN'], birthTime: null }).success).toBe(false);
+  it('accepts progressions without a birth time (an assumed noon)', () => {
+    expect(ForecastRequestSchema.safeParse({ ...request, method: 'progressed', movers: ['SUN'], birthTime: null }).success).toBe(true);
   });
 });
 
@@ -253,13 +253,24 @@ describe('POST /v1/charts/forecast', () => {
     expect(body.rows[0]).toHaveProperty('angle');
   });
 
-  it('answers 400 for progressions without a birth time', async () => {
+  it('answers progressions without a birth time, flagged as assumed', async () => {
     const app = await buildApp();
     await app.ready();
     const response = await app.inject({
       method: 'POST', url: '/v1/charts/forecast',
-      payload: { ...payload, method: 'progressed', movers: ['SUN'], birthTime: null },
+      payload: { ...payload, method: 'progressed', movers: ['SUN', 'MOON'], targets: ['SUN', 'MOON', 'ASC'], birthTime: null, orb: 1 },
     });
+    await app.close();
+    expect(response.statusCode).toBe(200);
+    const body = response.json() as ForecastData;
+    expect(body.meta.birthTimeAssumed).toBe(true);
+    expect(body.rows.some((r) => r.target === 'ASC')).toBe(false);
+  });
+
+  it('answers 400 for a date that does not exist', async () => {
+    const app = await buildApp();
+    await app.ready();
+    const response = await app.inject({ method: 'POST', url: '/v1/charts/forecast', payload: { ...payload, endDate: '2026-13-01' } });
     await app.close();
     expect(response.statusCode).toBe(400);
   });

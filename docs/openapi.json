@@ -3606,7 +3606,7 @@
                     ]
                   },
                   "method": {
-                    "description": "Transiting planets, or secondary progressions (a day for a year)",
+                    "description": "Transiting planets, or secondary progressions (a day for a year). Without a birth time the progressed clock starts at an assumed noon, which can move every progressed date by up to half a year (`meta.birthTimeAssumed`).",
                     "type": "string",
                     "enum": [
                       "transit",

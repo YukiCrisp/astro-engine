@@ -54,7 +54,7 @@ export const ForecastRequestSchema = z.object({
   utcOffsetMinutes: z.number().int().min(-840).max(840).describe('UTC offset in minutes at time of birth').meta({ example: 540 }),
   houseSystem: HouseSystemEnum.default('PLACIDUS').describe('House system (used for the natal ASC / MC targets)'),
   zodiacSystem: z.enum(['tropical', 'sidereal']).default('tropical').describe('Zodiac system (tropical or sidereal/Lahiri)'),
-  method: z.enum(['transit', 'progressed']).describe('Transiting planets, or secondary progressions (a day for a year)'),
+  method: z.enum(['transit', 'progressed']).describe('Transiting planets, or secondary progressions (a day for a year). Without a birth time the progressed clock starts at an assumed noon, which can move every progressed date by up to half a year (`meta.birthTimeAssumed`).'),
   startDate: windowDate.describe('Window start date in YYYY-MM-DD format').meta({ example: '2026-11-04' }),
   endDate: windowDate.describe('Window end date in YYYY-MM-DD format (inclusive)').meta({ example: '2027-11-03' }),
   movers: z.array(MoverEnum).min(1).describe('Moving bodies. Transit: Sun–Pluto and Chiron except the Moon (Sun–Mars only in windows up to 92 days). Progressed: Sun–Mars.'),
@@ -73,10 +73,6 @@ export const ForecastRequestSchema = z.object({
     } else if (v.method === 'transit' && FORECAST_FAST_TRANSIT_MOVERS.includes(m) && days > FORECAST_FAST_MAX_DAYS) {
       ctx.addIssue({ code: 'custom', path: ['movers'], message: `${m} needs a window of ${FORECAST_FAST_MAX_DAYS} days or less` });
     }
-  }
-  // A twelve-hour error in the birth time moves every progressed date by up to half a year.
-  if (v.method === 'progressed' && v.birthTime === null) {
-    ctx.addIssue({ code: 'custom', path: ['birthTime'], message: 'Progressions need a birth time' });
   }
 });
 export type ForecastRequest = z.infer<typeof ForecastRequestSchema>;
