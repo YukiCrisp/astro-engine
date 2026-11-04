@@ -1,7 +1,8 @@
 import { calcPlanets, calcHouses } from './sweph-adapter.js';
 import { detectAspects, detectCrossAspects } from './calculations/aspects.js';
 import type { AspectConfig } from './calculations/aspects.js';
-import { getProgressedJulianDay } from './calculations/progressions.js';
+import { getProgressedJulianDay, progressionClock } from './calculations/progressions.js';
+import { computeForecast } from './calculations/forecast.js';
 import { calculateSolarArcPositions, directSolarArcAngles } from './calculations/solar-arc.js';
 import { findSolarReturnJD } from './calculations/solar-return.js';
 import { findLunarReturnJD, listLunarReturnsInYear } from './calculations/lunar-return.js';
@@ -25,6 +26,7 @@ import type {
   NatalChartData, SolarArcChartData, HouseSystem, ZodiacSystem, TripleChartData,
   SynastryChartData, CompositeTransitChartData, EphemerisData, EphemerisEvent,
   VocMoonData, AstromapData, TransitEventsData,
+  ForecastData, ForecastMethod, ForecastTarget, ForecastAspectType,
   PlanetId, PointId, PlanetPosition, AspectType, SignName,
 } from './types.js';
 
@@ -957,4 +959,42 @@ export function calculateSolarReturnTransit(params: {
     solarReturn, transit, crossAspects,
     meta: { schemaVersion: SCHEMA_VERSION, calculatedAt: new Date().toISOString() },
   };
+}
+
+export function calculateForecast(params: {
+  birthDate: string; birthTime: string | null;
+  lat: number; lon: number;
+  utcOffsetMinutes: number; houseSystem: HouseSystem;
+  zodiacSystem?: ZodiacSystem;
+  method: ForecastMethod;
+  startDate: string; endDate: string;
+  movers: PlanetId[];
+  targets: ForecastTarget[];
+  aspects: ForecastAspectType[];
+  orb: number;
+}): ForecastData {
+  // The natal chart only needs the target bodies; ASC / MC come from its angles.
+  const targetPlanets = params.targets.filter((t): t is PlanetId => t !== 'ASC' && t !== 'MC');
+  const natal = calculateNatal({
+    birthDate: params.birthDate,
+    birthTime: params.birthTime,
+    lat: params.lat,
+    lon: params.lon,
+    utcOffsetMinutes: params.utcOffsetMinutes,
+    houseSystem: params.houseSystem,
+    zodiacSystem: params.zodiacSystem,
+    enabledPlanets: targetPlanets.length > 0 ? targetPlanets : ['SUN'],
+  });
+  return computeForecast({
+    natal,
+    method: params.method,
+    clock: progressionClock(params.birthDate, params.birthTime, params.utcOffsetMinutes),
+    startDate: params.startDate,
+    endDate: params.endDate,
+    movers: params.movers,
+    targets: params.targets,
+    aspects: params.aspects,
+    orb: params.orb,
+    zodiacSystem: params.zodiacSystem,
+  });
 }

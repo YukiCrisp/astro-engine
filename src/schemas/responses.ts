@@ -339,3 +339,31 @@ export const AstromapDataSchema = z.object({
     planetCount: z.number().int(),
   }),
 });
+
+export const ForecastDataSchema = z.object({
+  window: z.object({ startDate: z.string(), endDate: z.string() }),
+  method: z.enum(['transit', 'progressed']),
+  rows: z.array(z.object({
+    mover: PlanetIdEnum,
+    target: z.union([PlanetIdEnum, z.enum(['ASC', 'MC'])]),
+    aspect: z.enum(['CONJUNCTION', 'OPPOSITION', 'TRINE', 'SQUARE', 'SEXTILE']),
+    angle: z.number().describe('Shifted exact angle: the mover is this far ahead of the target at the exact (90 waxing square, 270 waning)'),
+    segments: z.array(z.object({ enter: z.string(), leave: z.string() })).describe('Stretches inside the orb (UT ISO)'),
+    openStart: z.boolean().describe('The first stretch was still inside the orb at the start of the search'),
+    openEnd: z.boolean().describe('The last stretch was still inside the orb at the end of the search'),
+    exacts: z.array(z.object({ at: z.string(), retrograde: z.boolean() })).describe('Exact moments (UT ISO)'),
+    closest: z.object({ at: z.string(), orb: z.number() }),
+  })),
+  ingresses: z.array(z.object({
+    mover: PlanetIdEnum,
+    kind: z.enum(['SIGN', 'HOUSE']),
+    sign: z.enum(['ARI', 'TAU', 'GEM', 'CAN', 'LEO', 'VIR', 'LIB', 'SCO', 'SAG', 'CAP', 'AQU', 'PIS']).optional(),
+    house: z.number().int().min(1).max(12).optional(),
+    at: z.string(),
+  })).describe('Sign and natal-house ingresses of the progressed Sun and Moon in the window (progressions only; houses only with a known birth time)'),
+  meta: z.object({
+    schemaVersion: z.number(),
+    calculatedAt: z.string(),
+    birthTimeAssumed: z.boolean().describe("Mirrors the natal chart's `meta.birthTimeAssumed`. When true, ASC / MC were left out and the natal Moon sits at an assumed noon."),
+  }),
+});

@@ -293,3 +293,55 @@ export interface AstromapData {
     planetCount: number;
   };
 }
+
+// ── Forecast list (transit / secondary progression aspects to the natal chart) ──
+
+export type ForecastMethod = 'transit' | 'progressed';
+export type ForecastAspectType = 'CONJUNCTION' | 'OPPOSITION' | 'TRINE' | 'SQUARE' | 'SEXTILE';
+export type ForecastTarget = PlanetId | 'ASC' | 'MC';
+
+export interface ForecastRow {
+  mover: PlanetId;
+  target: ForecastTarget;
+  aspect: ForecastAspectType;
+  /**
+   * The shifted exact angle (0, 60, 90, 120, 180, 240, 270, 300): the mover
+   * sits this far ahead of the target at the exact. Tells the waxing square
+   * (90) from the waning one (270).
+   */
+  angle: number;
+  /** Stretches inside the orb, UT ISO. Two or more when a retrograde loop takes it out and back. */
+  segments: { enter: string; leave: string }[];
+  /** The row's first / last segment was still open at the edge of the search (10 / 30 years out). */
+  openStart: boolean;
+  openEnd: boolean;
+  /** Exact moments, UT ISO. Empty when the mover enters and leaves the orb without perfecting. */
+  exacts: { at: string; retrograde: boolean }[];
+  /** The moment of the smallest orb, and that orb in degrees (0 when the row perfects). */
+  closest: { at: string; orb: number };
+}
+
+/** A progressed Sun or Moon entering a sign, or a natal house (progressions only). */
+export interface ForecastIngress {
+  mover: PlanetId;
+  kind: 'SIGN' | 'HOUSE';
+  /** The sign entered (kind SIGN). */
+  sign?: SignName;
+  /** The natal house entered, 1-12 (kind HOUSE). Left out when the birth time is unknown. */
+  house?: number;
+  /** UT ISO, to about a day. */
+  at: string;
+}
+
+export interface ForecastData {
+  window: { startDate: string; endDate: string };
+  method: ForecastMethod;
+  rows: ForecastRow[];
+  /** Sign and natal-house ingresses of the progressed Sun and Moon inside the window. Empty for transits. */
+  ingresses: ForecastIngress[];
+  meta: {
+    schemaVersion: number;
+    calculatedAt: string;
+    birthTimeAssumed: boolean;
+  };
+}
