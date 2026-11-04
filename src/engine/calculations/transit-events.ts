@@ -76,7 +76,7 @@ const SIGN_FULL_NAMES: Record<SignName, string> = {
 };
 
 /** House (1-12) containing the given longitude, honoring cusp wrap-around at 360°. */
-function houseIndexForLongitude(longitude: number, houses: HouseCusp[]): number {
+export function houseIndexForLongitude(longitude: number, houses: HouseCusp[]): number {
   const sorted = [...houses].sort((a, b) => a.house - b.house);
   for (let i = 0; i < sorted.length; i++) {
     const cusp = sorted[i].longitude;
